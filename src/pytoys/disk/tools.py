@@ -51,7 +51,7 @@ def compress_virtual_disk(vhd_path: str):
     except subprocess.CalledProcessError as e:
         raise
     else:
-        print(f">>>>> 虚拟磁盘 {vhd_path} 压缩完成")
+        logger.success("虚拟磁盘 {} 压缩完成", vhd_path)
     finally:
         # 删除临时脚本文件
         if os.path.exists(temp_script_path):

@@ -1,0 +1,24 @@
+[project]
+name = "pytoys"
+version = "0.1.0"
+description = "Default template for PDM package"
+authors = [
+    {name = "BytemanD", email = "byteman.d@outlook.com"},
+]
+dependencies = ["click>=8.1.8", "loguru>=0.7.3", "prettytable>=3.16.0"]
+requires-python = ">=3.10"
+readme = "README.md"
+license = {text = "MIT"}
+
+[project.scripts]
+pytoys-win = "pytoys.cmd.win:cli"
+
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
+
+
+[tool.pdm]
+distribution = true
+
+

@@ -1,4 +1,3 @@
-import sys
 import subprocess
 
 import click
@@ -10,16 +9,17 @@ from pytoys.vscode import extension as vscode_extension
 
 
 @click.group()
-@click.option("--debug", is_flag=True, help="debug")
-def cli(debug):
+@click.option("--logfile", help="log file")
+@click.option("--debug", '-d', is_flag=True, help="debug")
+def cli(debug, logfile):
     """Windows system tools"""
-    logging.setup_logger(level="DEBUG" if debug else "INFO")
+    logging.setup_logger(level="DEBUG" if debug else "INFO",
+                         file=logfile)
 
 
 @cli.group()
 def disk():
     """Disk tools"""
-    pass
 
 
 @disk.command()
@@ -29,13 +29,12 @@ def compress_vhd(vhd_path):
     try:
         tools.compress_virtual_disk(vhd_path)
     except subprocess.CalledProcessError as e:
-        logger.error("run diskpart failed")
+        logger.error("run diskpart failed: {}", e)
 
 
 @cli.group()
 def vscode():
     """VSCode extension tools"""
-    pass
 
 
 @vscode.command()
@@ -44,9 +43,9 @@ def download_extension(name):
     """Compress vhd/vhdx disk"""
     try:
         vscode_extension.download_extension(name)
-    except Exception as e:
+    except vscode_extension.ExtensionNotFound as e:
         logger.error("download {} failed failed: {}", name, e)
 
 
 if __name__ == '__main__':
-    cli()
+    cli()           # noqa

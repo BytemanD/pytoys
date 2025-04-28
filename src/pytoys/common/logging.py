@@ -1,5 +1,7 @@
 import sys
+
 from loguru import logger
+
 
 def setup_logger(level="INFO", file=None):
     """Setup logging configuration."""

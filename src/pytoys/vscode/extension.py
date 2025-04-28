@@ -1,17 +1,17 @@
+"""VSCode extension api from marketplace"""
 import dataclasses
 import json
 import re
-from urllib import parse
 
 from loguru import logger
 import prettytable
-import requests
 
 from pytoys.common import user_input
+from pytoys.common import httpclient
 
 
 @dataclasses.dataclass
-class Extension(object):
+class Extension:
     """Extension object"""
     id: str
     name: str
@@ -22,26 +22,17 @@ class Extension(object):
     publisher_display_name: str
     flags: str = None
 
+class ExtensionNotFound(Exception):
+    """Extension not found exception"""
 
-class MarketplaceAPI(object):
-    BASE_URL = 'https://marketplace.visualstudio.com'
+    def __init__(self, name):
+        super().__init__(f'extension "{name}" not found')
+
+class MarketplaceAPI(httpclient.HttpClient):
+    """Marketplace API"""
 
     def __init__(self):
-        self.client = requests.Session()
-
-    def get(self, url, params=None):
-        """Get a page from the marketplace"""
-        resp = self.client.get(parse.urljoin(self.BASE_URL, url.lstrip('/')),
-                               params=params)
-        resp.raise_for_status()
-        return resp
-
-    def post(self, url, json=None):
-        """Get a page from the marketplace"""
-        resp = self.client.post(parse.urljoin(self.BASE_URL, url.lstrip('/')),
-                                json=json)
-        resp.raise_for_status()
-        return resp
+        super().__init__('https://marketplace.visualstudio.com')
 
     def search(self, name):
         """Search for plugins in the marketplace"""
@@ -65,6 +56,7 @@ class MarketplaceAPI(object):
                 }
             ],
         }
+        logger.info('search extension: {}', name)
         resp = self.post('/_apis/public/gallery/extensionquery', json=data)
         results = json.loads(resp.content).get('results')
         if len(results) < 1:
@@ -74,6 +66,7 @@ class MarketplaceAPI(object):
             for version in extension.get('versions') or []:
                 if 'version' in version:
                     return version.get('version')
+            return None
 
         extensions = results[0].get('extensions', [])
         return [
@@ -90,18 +83,20 @@ class MarketplaceAPI(object):
             ) for ext in extensions
         ]
 
-    def download(self, extension: Extension):
+    def download(self, ext: Extension):
         """Download extension from marketplace"""
-        logger.info('download extension: {}({})', extension.display_name,
-                    extension.name)
-        url = f'/_apis/public/gallery/publishers/{extension.publisher_name}/' \
-              f'vsextensions/{extension.name}/{extension.version}/vspackage'
+        logger.info('download extension: {}({})', ext.display_name,
+                    ext.name)
+        url = f'/_apis/public/gallery/publishers/{ext.publisher_name}/' \
+              f'vsextensions/{ext.name}/{ext.version}/vspackage'
         resp = self.get(url)
-        matched = re.match(r'.*filename=(.+);', resp.headers.get('content-disposition'))
+        matched = re.match(r'.*filename=(.+);',
+                           resp.headers.get('content-disposition'))
         filename = matched.group(1) if matched else \
-            f'{extension.publisher_name}.{extension.name}-{extension.version}.vsix'
+            f'{ext.publisher_name}.{ext.name}-{ext.version}.vsix'
 
-        logger.info('save extension: {}, size: {}', extension.name, resp.headers.get('content-length'))
+        logger.info('save extension: {}, size: {}', ext.name,
+                    resp.headers.get('content-length'))
         with open(filename, 'wb') as f:
             f.write(resp.content)
         logger.success('saved to {}', filename)
@@ -112,13 +107,12 @@ def download_extension(name):
     marketplace = MarketplaceAPI()
     items = marketplace.search(name)
     if not items:
-        raise Exception(f'extension "{name}" not found')
+        raise ExtensionNotFound(name)
 
     table = prettytable.PrettyTable(['#', 'extension', 'publisher name',
                                      'version', 'flags'])
     table.align.update({'extension': 'l', 'publisher name': 'l'})
     table.max_width['extension'] = 50
-    # table.max_width['flags'] = 20
     for index, item in enumerate(items):
         table.add_row([index+1, item.display_name, item.publisher_display_name,
                        item.version, item.flags])

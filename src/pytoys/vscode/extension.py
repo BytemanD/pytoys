@@ -124,7 +124,7 @@ def download_extension(name):
 
     select_index = user_input.get_input_number('请输入要下载的插件序号', min_number=1,
                                               max_number=len(items))
-    if select_index is None:
+    if not select_index:
         return
     select_item = items[select_index-1]
     marketplace.download(select_item)

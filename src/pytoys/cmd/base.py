@@ -3,11 +3,11 @@ import sys
 from urllib import parse
 
 from loguru import logger
-import prettytable
-from termcolor import cprint
+import click
 
 from pytoys.common import command
-from pytoys.common import user_input
+from pytoys.pip import repos
+from pytoys.vscode import extension as vscode_extension
 from . import cli
 
 
@@ -17,42 +17,40 @@ def pip():
 
 
 @pip.command()
-def config_repo():
+@click.option('--index-url', help='pip源地址')
+def config_repo(index_url=None):
     """配置pip源"""
-    repos = [
-        ('清华大学', 'https://pypi.tuna.tsinghua.edu.cn/simple'),
-        ('阿里云', 'https://mirrors.aliyun.com/pypi/simple'),
-        ('中国科技大学', 'https://pypi.mirrors.ustc.edu.cn/simple'),
-        ('豆瓣', 'http://pypi.douban.com/simple'),
-    ]
 
-    table = prettytable.PrettyTable(['#', "名称", '地址'])
-    table.align.update({'#':'r', '名称': 'l', '地址': 'l'})
-    for i, (name, repo) in enumerate(repos):
-        table.add_row([i+1, name, repo])
-
-    try:
-        cprint('选择源:', color='cyan')
-        print(table)
-        selected = user_input.get_input_number('请输入编号(输入其他表示自定义)')
-        if not selected:
-            return 0
-        if 1 <= selected <= len(repos):
-            input_repo = repos[selected - 1][1]
-        else:
-            input_repo = input('请输入源地址: ')
-
-        url = parse.urlparse(input_repo)
-        if not url.hostname:
-            logger.error("config failed, invalid url: {}", input_repo)
+    if not index_url:
+        index_url = repos.select_repos()
+        if not index_url:
             return 1
-        command.execute(f'pip config set global.index-url {input_repo}')
+    url = parse.urlparse(index_url)
+    if not url.hostname:
+        logger.error("config failed, invalid url: {}", index_url)
+        return 1
+    try:
+        command.execute(f'pip config set global.index-url {index_url}')
         command.execute(f'pip config set global.trusted-host {url.hostname}')
         logger.success("config success")
         return 0
     except subprocess.CalledProcessError as e:
         logger.error("config pip failed: {}", e)
         return 1
+
+
+@cli.group()
+def vscode():
+    """VSCode extension tools"""
+
+@vscode.command()
+@click.argument('name')
+def download_extension(name):
+    """下载插件"""
+    try:
+        vscode_extension.download_extension(name)
+    except vscode_extension.ExtensionNotFound as e:
+        logger.error("download {} failed failed: {}", name, e)
 
 
 if __name__ == '__main__':

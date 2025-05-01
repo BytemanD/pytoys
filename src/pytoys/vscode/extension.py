@@ -23,6 +23,7 @@ class Extension:
     publisher_display_name: str
     flags: str = None
 
+
 class ExtensionNotFound(Exception):
     """Extension not found exception"""
 

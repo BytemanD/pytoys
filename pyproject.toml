@@ -24,4 +24,5 @@ build-backend = "pdm.backend"
 distribution = true
 
 [tool.pylint."MESSAGES CONTROL"]
-disable = ["invalid-name", "missing-docstring", "missing-module-docstring"]
+disable = ["invalid-name", "missing-docstring", "missing-module-docstring",
+           "too-many-instance-attributes"]

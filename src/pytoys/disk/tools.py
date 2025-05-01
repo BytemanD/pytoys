@@ -1,6 +1,5 @@
 import subprocess
 import os
-import argparse
 import sys
 import tempfile
 from loguru import logger
@@ -48,26 +47,8 @@ def compress_virtual_disk(vhd_path: str):
         subprocess.run(['diskpart', '/s', temp_script_path],
                        stdout=sys.stdout, stderr=sys.stderr,
                        text=True, check=True)
-    except subprocess.CalledProcessError as e:
-        raise
-    else:
         logger.success("虚拟磁盘 {} 压缩完成", vhd_path)
     finally:
         # 删除临时脚本文件
         if os.path.exists(temp_script_path):
             os.remove(temp_script_path)
-
-
-def main():
-    parser = argparse.ArgumentParser(description='压缩虚拟磁盘(VHD/VHDX)工具')
-    parser.add_argument('vhd_path', help='虚拟磁盘文件的路径')
-    args = parser.parse_args()
-    try:
-        compress_virtual_disk(args.vhd_path)
-    except Exception as e:
-        print(f"错误: {e}")
-        exit(1)
-
-
-if __name__ == '__main__':
-    main()

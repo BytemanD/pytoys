@@ -36,7 +36,7 @@ def config_repo():
         print(table)
         selected = user_input.get_input_number('请输入编号(输入其他表示自定义)')
         if not selected:
-            return
+            return 0
         if 1 <= selected <= len(repos):
             input_repo = repos[selected - 1][1]
         else:
@@ -49,6 +49,7 @@ def config_repo():
         command.execute(f'pip config set global.index-url {input_repo}')
         command.execute(f'pip config set global.trusted-host {url.hostname}')
         logger.success("config success")
+        return 0
     except subprocess.CalledProcessError as e:
         logger.error("config pip failed: {}", e)
         return 1

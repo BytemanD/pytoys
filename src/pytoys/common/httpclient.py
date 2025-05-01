@@ -41,7 +41,7 @@ class HttpClient:
                 'text/html' in resp_content_type):
             resp_content = resp.content.decode()
         if len(resp_content) > self.log_body_limit:
-                resp_content = resp_content[0:self.log_body_limit] +'...'
+            resp_content = resp_content[0:self.log_body_limit] +'...'
 
         if not resp_content:
             resp_content = f'<type: {resp_content_type}>'
@@ -49,7 +49,7 @@ class HttpClient:
             resp_content = resp_content[0:self.log_body_limit] +'...'
         return resp_content
 
-    def _hook_log_response(self, resp: requests.Response, **kwargs):
+    def _hook_log_response(self, resp: requests.Response, **kwargs): # pylint: disable=unused-argument
         """Log response"""
 
         def _parse_resp_headers(headers):

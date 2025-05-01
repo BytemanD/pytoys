@@ -15,7 +15,7 @@ def get_input_number(message, min_number=None, max_number=None,
     input_index = input_index.strip()
     while True:
         if input_index in quit_strs:
-            return
+            return ''
         try:
             index = int(input_index)
             if (min_number is None or index >= min_number) and \

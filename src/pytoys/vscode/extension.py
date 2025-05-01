@@ -5,6 +5,7 @@ import re
 
 from loguru import logger
 import prettytable
+from termcolor import cprint
 
 from pytoys.common import user_input
 from pytoys.common import httpclient
@@ -117,7 +118,7 @@ def download_extension(name):
         table.add_row([index+1, item.display_name, item.publisher_display_name,
                        item.version, item.flags])
 
-    print('查询结果:')
+    cprint('查询结果:', color='cyan')
     print(table)
 
     select_index = user_input.get_input_number('请输入要下载的插件序号', min_number=1,

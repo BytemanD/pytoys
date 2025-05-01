@@ -32,7 +32,7 @@ def config_repo():
         table.add_row([i+1, name, repo])
 
     try:
-        cprint('选择源:', color='yellow')
+        cprint('选择源:', color='cyan')
         print(table)
         selected = user_input.get_input_number('请输入编号(输入其他表示自定义)')
         if not selected:

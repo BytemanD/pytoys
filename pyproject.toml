@@ -5,12 +5,14 @@ description = "Default template for PDM package"
 authors = [
     {name = "BytemanD", email = "byteman.d@outlook.com"},
 ]
-dependencies = ["click>=8.1.8", "loguru>=0.7.3", "prettytable>=3.16.0"]
+dependencies = ["click>=8.1.8", "loguru>=0.7.3", "prettytable>=3.16.0",
+                "termcolor>=3.1.0"]
 requires-python = ">=3.10"
 readme = "README.md"
 license = {text = "MIT"}
 
 [project.scripts]
+pytoys = "pytoys.cmd.base:cli"
 pytoys-win = "pytoys.cmd.win:cli"
 
 [build-system]
@@ -21,4 +23,5 @@ build-backend = "pdm.backend"
 [tool.pdm]
 distribution = true
 
-
+[tool.pylint."MESSAGES CONTROL"]
+disable = ["invalid-name", "missing-docstring", "missing-module-docstring"]

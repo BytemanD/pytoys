@@ -1,20 +1,12 @@
 import subprocess
+import sys
 
 import click
 from loguru import logger
 
-from pytoys.common import logging
 from pytoys.disk import tools
 from pytoys.vscode import extension as vscode_extension
-
-
-@click.group()
-@click.option("--logfile", help="log file")
-@click.option("--debug", '-d', is_flag=True, help="debug")
-def cli(debug, logfile):
-    """Windows system tools"""
-    logging.setup_logger(level="DEBUG" if debug else "INFO",
-                         file=logfile)
+from . import cli
 
 
 @cli.group()
@@ -48,4 +40,4 @@ def download_extension(name):
 
 
 if __name__ == '__main__':
-    cli()           # noqa
+    sys.exit(cli())

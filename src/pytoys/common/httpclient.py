@@ -3,14 +3,24 @@ from urllib import parse
 import requests
 from loguru import logger
 
-RESP_TEMPLATE = """Response:
-> {method} {url}
-> Content-Type: {content_type}
+RESP_TEMPLATE = """http request:
+{request}
 
-< {status_code} {reason}
-< Content-Length: {content_length}
-< Body: {content}
+{status_code} {reason}
+{resp_headers}
+Body: {content}
 """
+
+def _parse_request_to_curl(request: requests.Request) -> str:
+    cmd = ['curl', f'-X{request.method}', f"'{request.url}'"]
+    for k, v in request.headers.items():
+        cmd.append(f"-H '{k}: {v}'")
+    req_type = request.headers.get('content-type')
+    if req_type in ['application/json', 'text/html']:
+        cmd.append(f"-d '{request.body.decode()}'")
+    elif request.body:
+        cmd.append(f"<type: {req_type}>")
+    return ' '.join(cmd)
 
 
 class HttpClient:
@@ -21,29 +31,36 @@ class HttpClient:
         self.timeout = timeout
         self.log_body_limit = log_body_limit
         self.session = requests.Session()
-        self.session.hooks['response'].append(self.hook_log_response)
+        self.session.hooks['response'].append(self._hook_log_response)
 
-    def hook_log_response(self, response: requests.Response, **kwargs):
+    def _get_log_body(self, resp: requests.Response):
+        resp_content_type = resp.headers.get('Content-Type')
+        resp_content = ''
+        if resp_content_type \
+           and ('application/json' in resp_content_type or \
+                'text/html' in resp_content_type):
+            resp_content = resp.content.decode()
+        if len(resp_content) > self.log_body_limit:
+                resp_content = resp_content[0:self.log_body_limit] +'...'
+
+        if not resp_content:
+            resp_content = f'<type: {resp_content_type}>'
+        elif len(resp_content) > self.log_body_limit:
+            resp_content = resp_content[0:self.log_body_limit] +'...'
+        return resp_content
+
+    def _hook_log_response(self, resp: requests.Response, **kwargs):
         """Log response"""
-        resp_content_type = response.headers.get('Content-Type')
-        response_content = ''
-        if resp_content_type:
-            if 'application/json' in resp_content_type or \
-               'text/html' in resp_content_type:
-                response_content = response.content[0:self.log_body_limit]
-                if len(response.content) > self.log_body_limit:
-                    response_content += b'...'
-        if not response_content:
-            response_content = f'<type: {resp_content_type}>'
+
+        def _parse_resp_headers(headers):
+            return '\n'.join([f'{k}: {v}' for k, v in headers.items()])
 
         logger.debug(RESP_TEMPLATE,
-                     method=response.request.method, url=response.request.url,
-                     content_type=response.request.headers.get('Content-Type'),
-                     status_code=response.status_code,
-                     reason=response.reason,
-                     content_length=response.headers.get('Content-Length', ''),
-                     content=response_content)
-        return response
+                     request=_parse_request_to_curl(resp.request),
+                     status_code=resp.status_code, reason=resp.reason,
+                     resp_headers=_parse_resp_headers(resp.headers),
+                     content=self._get_log_body(resp))
+        return resp
 
     def _request(self, method, url, **kwargs):
         """http request"""

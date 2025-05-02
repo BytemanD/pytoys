@@ -3,6 +3,8 @@ from typing import List, Dict
 import prettytable
 from termcolor import colored, cprint
 
+from pytoys.common import prettytable
+
 
 def get_input_number(message, min_number=None, max_number=None,
                      quit_strs=None):
@@ -38,7 +40,8 @@ def select_items(items: List[dict], headers: List[str], title: Dict=None,
     select_msg = select_msg or '请选择:'
     input_msg = input_msg or '请输入编号'
 
-    table = prettytable.PrettyTable(['#'] + [title.get(h, h) for h in headers])
+    table = prettytable.Table(['#'] + [title.get(h, h) for h in headers],
+                              style=prettytable.STYLE_LIGHT)
     for i, item in enumerate(items):
         table.add_row([i+1] + [item.get(h) for h in headers])
 

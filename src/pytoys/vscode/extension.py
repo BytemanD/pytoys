@@ -4,8 +4,6 @@ import json
 import re
 
 from loguru import logger
-import prettytable
-from termcolor import cprint
 
 from pytoys.common import user_input
 from pytoys.common import httpclient
@@ -29,6 +27,7 @@ class ExtensionNotFound(Exception):
 
     def __init__(self, name):
         super().__init__(f'extension "{name}" not found')
+
 
 class MarketplaceAPI(httpclient.HttpClient):
     """Marketplace API"""
@@ -111,20 +110,13 @@ def download_extension(name):
     if not items:
         raise ExtensionNotFound(name)
 
-    table = prettytable.PrettyTable(['#', 'extension', 'publisher name',
-                                     'version', 'flags'])
-    table.align.update({'extension': 'l', 'publisher name': 'l'})
-    table.max_width['extension'] = 50
-    for index, item in enumerate(items):
-        table.add_row([index+1, item.display_name, item.publisher_display_name,
-                       item.version, item.flags])
-
-    cprint('查询结果:', color='cyan')
-    print(table)
-
-    select_index = user_input.get_input_number('请输入要下载的插件序号', min_number=1,
-                                              max_number=len(items))
-    if not select_index:
+    item = user_input.select_items(
+        [dataclasses.asdict(item) for item in items],
+        {'display_name', 'publisher_display_name', 'version', 'flags'},
+        title={'display_name': '插件', 'publisher_display_name': '发布者',
+               'version': '版本', 'flags': '标签'},
+        select_msg='查询结果:',
+    )
+    if not item:
         return
-    select_item = items[select_index-1]
-    marketplace.download(select_item)
+    marketplace.download(Extension(**item))

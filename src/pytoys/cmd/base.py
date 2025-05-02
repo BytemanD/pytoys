@@ -32,7 +32,7 @@ def config_repo(index_url=None):
     try:
         command.execute(f'pip config set global.index-url {index_url}')
         command.execute(f'pip config set global.trusted-host {url.hostname}')
-        logger.success("config success")
+        logger.success("已设置源: {}", index_url)
         return 0
     except subprocess.CalledProcessError as e:
         logger.error("config pip failed: {}", e)
@@ -51,6 +51,7 @@ def download_extension(name):
         vscode_extension.download_extension(name)
     except vscode_extension.ExtensionNotFound as e:
         logger.error("download {} failed failed: {}", name, e)
+        return 1
 
 
 if __name__ == '__main__':

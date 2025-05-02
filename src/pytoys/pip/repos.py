@@ -1,6 +1,3 @@
-import prettytable
-from termcolor import cprint
-
 from pytoys.common import user_input
 
 repos = [
@@ -14,14 +11,8 @@ repos = [
 
 
 def select_repos() -> str:
-    table = prettytable.PrettyTable(['#', "名称", '地址'])
-    table.align.update({'#':'r', '名称': 'l', '地址': 'l'})
-    for i, (name, repo) in enumerate(repos):
-        table.add_row([i+1, name, repo])
-
-    cprint('选择常用pip源:', color='cyan')
-    print(table)
-    selected = user_input.get_input_number('请输入编号(输入其他表示自定义)')
-    if not selected:
-        return ''
-    return repos[selected - 1][1] if 1 <= selected <= len(repos) else ''
+    item = user_input.select_items(
+        [{'名称': v1, '地址': v2} for v1, v2 in repos],
+        ['名称', '地址'],
+    )
+    return item.get('地址') if item else ''

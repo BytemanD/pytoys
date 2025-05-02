@@ -1,4 +1,7 @@
-from termcolor import colored
+from typing import List, Dict
+
+import prettytable
+from termcolor import colored, cprint
 
 
 def get_input_number(message, min_number=None, max_number=None,
@@ -25,3 +28,23 @@ def get_input_number(message, min_number=None, max_number=None,
         except ValueError:
             input_index = input(colored('输入错误，请重新输入: ', color='red'))
             input_index = input_index.strip()
+
+
+def select_items(items: List[dict], headers: List[str], title: Dict=None,
+                 select_msg: str=None, input_msg: str=None) -> dict:
+    """打印items列表, 并获取用户选择结果"""
+
+    title = title or {}
+    select_msg = select_msg or '请选择:'
+    input_msg = input_msg or '请输入编号'
+
+    table = prettytable.PrettyTable(['#'] + [title.get(h, h) for h in headers])
+    for i, item in enumerate(items):
+        table.add_row([i+1] + [item.get(h) for h in headers])
+
+    cprint(select_msg, color='cyan')
+    print(table)
+    selected = get_input_number(input_msg, min_number=1, max_number=len(items))
+    if not selected:
+        return {}
+    return items[selected-1]

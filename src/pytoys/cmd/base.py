@@ -8,6 +8,7 @@ import click
 from pytoys.common import command
 from pytoys.pip import repos
 from pytoys.vscode import extension as vscode_extension
+from pytoys.github import proxy
 from . import cli
 
 
@@ -43,14 +44,36 @@ def config_repo(index_url=None):
 def vscode():
     """VSCode extension tools"""
 
+
 @vscode.command()
 @click.argument('name')
 def download_extension(name):
     """下载插件"""
     try:
         vscode_extension.download_extension(name)
+        return 0
     except vscode_extension.ExtensionNotFound as e:
         logger.error("download {} failed failed: {}", name, e)
+        return 1
+
+
+
+
+@cli.group()
+def github():
+    """Github tools"""
+
+
+@github.command()
+@click.argument('url')
+def proxy_download(url):
+    """下载github资源"""
+    try:
+        proxy.download(url)
+        logger.success("download {} success", url)
+        return 0
+    except proxy.AllProxyDownloadFailed as e:
+        logger.error("download failed: {}", e)
         return 1
 
 

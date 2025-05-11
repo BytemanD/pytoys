@@ -1,7 +1,6 @@
 """VSCode extension api from marketplace"""
 import dataclasses
 import json
-import re
 
 from loguru import logger
 
@@ -20,6 +19,10 @@ class Extension:
     publisher_name: str
     publisher_display_name: str
     flags: str = None
+
+    def filename(self):
+        """Get file name"""
+        return f'{self.publisher_name}.{self.name}-{self.version}.vsix'
 
 
 class ExtensionNotFound(Exception):
@@ -57,7 +60,6 @@ class MarketplaceAPI(httpclient.HttpClient):
                 }
             ],
         }
-        logger.info('search extension: {}', name)
         resp = self.post('/_apis/public/gallery/extensionquery', json=data)
         results = json.loads(resp.content).get('results')
         if len(results) < 1:
@@ -84,39 +86,30 @@ class MarketplaceAPI(httpclient.HttpClient):
             ) for ext in extensions
         ]
 
-    def download(self, ext: Extension):
+    def download_extension(self, ext: Extension):
         """Download extension from marketplace"""
         logger.info('download extension: {}({})', ext.display_name,
                     ext.name)
         url = f'/_apis/public/gallery/publishers/{ext.publisher_name}/' \
               f'vsextensions/{ext.name}/{ext.version}/vspackage'
-        resp = self.get(url)
-        matched = re.match(r'.*filename=(.+);',
-                           resp.headers.get('content-disposition'))
-        filename = matched.group(1) if matched else \
-            f'{ext.publisher_name}.{ext.name}-{ext.version}.vsix'
 
-        logger.info('save extension: {}, size: {}', ext.name,
-                    resp.headers.get('content-length'))
-        with open(filename, 'wb') as f:
-            f.write(resp.content)
-        logger.success('saved to {}', filename)
+        self.download(url, default_filename=ext.filename(), progress=True)
+        logger.success('download success')
 
+    def search_and_download(self, name):
+        """Search and download extension"""
+        logger.info('search extension: {}', name)
+        items = self.search(name)
+        if not items:
+            raise ExtensionNotFound(name)
 
-def download_extension(name):
-    """Download extension from vscode marketplace"""
-    marketplace = MarketplaceAPI()
-    items = marketplace.search(name)
-    if not items:
-        raise ExtensionNotFound(name)
-
-    item = user_input.select_items(
-        [dataclasses.asdict(item) for item in items],
-        {'display_name', 'publisher_display_name', 'version', 'flags'},
-        title={'display_name': '插件', 'publisher_display_name': '发布者',
-               'version': '版本', 'flags': '标签'},
-        select_msg='查询结果:',
-    )
-    if not item:
-        return
-    marketplace.download(Extension(**item))
+        item = user_input.select_items(
+            [dataclasses.asdict(item) for item in items],
+            {'display_name', 'publisher_display_name', 'version', 'flags'},
+            title={'display_name': '插件', 'publisher_display_name': '发布者',
+                   'version': '版本', 'flags': '标签'},
+            select_msg='查询结果:',
+        )
+        if not item:
+            return
+        self.download_extension(Extension(**item))

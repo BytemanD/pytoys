@@ -50,7 +50,8 @@ def vscode():
 def download_extension(name):
     """下载插件"""
     try:
-        vscode_extension.download_extension(name)
+        api = vscode_extension.MarketplaceAPI()
+        api.search_and_download(name)
         return 0
     except vscode_extension.ExtensionNotFound as e:
         logger.error("download {} failed failed: {}", name, e)

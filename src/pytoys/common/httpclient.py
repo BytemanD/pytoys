@@ -1,7 +1,10 @@
 from urllib import parse
+import re
+import io
 
-import requests
 from loguru import logger
+import requests
+import tqdm
 
 RESP_TEMPLATE = """http request:
 {request}
@@ -10,6 +13,19 @@ RESP_TEMPLATE = """http request:
 {resp_headers}
 Body: {content}
 """
+
+class NopProgress:
+    """No progress bar"""
+
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def update(self, *args, **kwargs):
+        pass
+
+    def close(self):
+        pass
+
 
 def _parse_request_to_curl(request: requests.Request) -> str:
     cmd = ['curl', f'-X{request.method}', f"'{request.url}'"]
@@ -75,10 +91,38 @@ class HttpClient:
         resp.raise_for_status()
         return resp
 
-    def get(self, url, params=None):
+    def get(self, url, params=None, stream=False):
         """http get"""
-        return self._request('GET', url, params=params)
+        return self._request('GET', url, params=params, stream=stream)
 
     def post(self, url, json=None):
         """http post"""
         return self._request('POST', url, json=json)
+
+    def download(self, url, params=None, default_filename=None,
+                 progress=False):
+        """http download"""
+        resp = self.get(url, params=params, stream=True)
+        matched = re.match(r'.*filename=(.+);',
+                           resp.headers.get('content-disposition'))
+        if matched:
+            filename = matched.group(1)
+        elif default_filename:
+            filename = default_filename
+        else:
+            filename = url.split('/')[-1]
+
+        logger.info('save to {}, size: {}', filename,
+                    resp.headers.get('content-length'))
+        total = int(resp.headers.get("content-length"))
+        if progress:
+            progressbar = tqdm.tqdm(desc=f"Downloading {filename}",
+                                    total=total, unit='iB')
+        else:
+            progressbar = NopProgress()
+
+        with open(filename, 'wb') as f:
+            for chunk in resp.iter_content(chunk_size=io.DEFAULT_BUFFER_SIZE):
+                f.write(chunk)
+                logger.debug(f"write {len(chunk)} bytes")
+                progressbar.update(len(chunk))

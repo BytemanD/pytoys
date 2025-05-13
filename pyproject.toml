@@ -7,7 +7,10 @@ authors = [
 ]
 dependencies = ["click>=8.1.8", "loguru>=0.7.3", "prettytable>=3.16.0",
                 "termcolor>=3.1.0",
-                "tqdm>=4.67.1"]
+                "tqdm>=4.67.1",
+                "qrcode>=8.2",
+                "Pillow>=11.2.1",
+                "pyzbar>=0.1.9"]
 requires-python = ">=3.10"
 readme = "README.md"
 license = {text = "MIT"}

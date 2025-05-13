@@ -9,7 +9,6 @@ from pytoys.common import command
 from pytoys.pip import repos
 from pytoys.vscode import extension as vscode_extension
 from pytoys.github import proxy
-from pytoys.code import qrcode as qrcodetools
 from . import cli
 
 
@@ -75,31 +74,6 @@ def proxy_download(url):
     except proxy.AllProxyDownloadFailed as e:
         logger.error("download failed: {}", e)
         return 1
-
-
-
-
-@cli.group()
-def qrcode():
-    """QRCode tools"""
-
-
-@qrcode.command()
-@click.argument('text')
-@click.option('-o', '--output', default=None, type=click.Path(),
-              help='output file')
-def encode(text, output=None):
-    """生成二维码"""
-    code = qrcodetools.QRCodeExtend()
-    code.add_data(text)
-    if output:
-        code.save(output)
-        logger.success("save qrcode to {}", output)
-        return 0
-    for line in code.parse_string_lines():
-        print(line)
-    return 0
-
 
 
 if __name__ == '__main__':

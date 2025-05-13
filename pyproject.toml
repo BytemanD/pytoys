@@ -17,6 +17,7 @@ license = {text = "MIT"}
 
 [project.scripts]
 pytoys = "pytoys.cmd.base:cli"
+pytoys-ext = "pytoys.cmd.ext:cli"
 pytoys-win = "pytoys.cmd.win:cli"
 
 [build-system]

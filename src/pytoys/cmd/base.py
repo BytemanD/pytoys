@@ -9,6 +9,8 @@ from pytoys.common import command
 from pytoys.pip import repos
 from pytoys.vscode import extension as vscode_extension
 from pytoys.github import proxy
+from pytoys.net import ipinfo
+from pytoys.net import location
 from . import cli
 
 
@@ -73,6 +75,45 @@ def proxy_download(url):
         return 0
     except proxy.AllProxyDownloadFailed as e:
         logger.error("download failed: {}", e)
+        return 1
+
+
+@cli.group()
+def local():
+    """Local tools"""
+
+
+@local.command()
+@click.option('--detail', is_flag=True, help='show detail')
+def info(detail=False):
+    """Get Local info"""
+    try:
+        local_info = {}
+        for api in [ipinfo.IPinfoAPI(), ipinfo.IPApi()]:
+            try:
+                public_ip = api.get_public_ip()
+                local_info['ip'] = public_ip
+                break
+            except IOError:
+                continue
+        if 'ip' not in local_info:
+            raise IOError('get public ip failed')
+
+        ip_location = location.Location()
+        for api in [location.IP77Api(), location.UUToolApi()]:
+            ip_location = api.get_location(local_info.get('ip'))
+            break
+        if not detail:
+            print(f'ip      : {local_info.get("ip")}')
+            print(f'location: {ip_location.info()}')
+        else:
+            local_info.update(**ip_location.to_dict())
+            for k, v in local_info.items():
+                if not v:
+                    continue
+                print(f'{k:15}:', v)
+    except IOError as e:
+        logger.error("get local info failed: {}", e)
         return 1
 
 

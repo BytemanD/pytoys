@@ -6,6 +6,10 @@ from loguru import logger
 import requests
 import tqdm
 
+TYPE_WWW_FORM = 'application/x-www-form-urlencoded'
+TYPE_JSON = 'application/json'
+TYPE_TEXT_HTML = 'text/html'
+
 RESP_TEMPLATE = """http request:
 {request}
 
@@ -34,8 +38,10 @@ def _parse_request_to_curl(request: requests.Request) -> str:
     req_type = request.headers.get('content-type')
     if req_type in ['application/json', 'text/html']:
         cmd.append(f"-d '{request.body.decode()}'")
+    elif isinstance(request.body, str):
+        cmd.append(f"-d '{request.body}'")
     elif request.body:
-        cmd.append(f"<type: {req_type}>")
+        cmd.append(f"-d <type: {req_type}>")
     return ' '.join(cmd)
 
 
@@ -91,13 +97,15 @@ class HttpClient:
         resp.raise_for_status()
         return resp
 
-    def get(self, url, params=None, stream=False):
+    def get(self, url, params=None, stream=False, headers=None):
         """http get"""
-        return self._request('GET', url, params=params, stream=stream)
+        return self._request('GET', url, params=params, stream=stream,
+                             headers=headers)
 
-    def post(self, url, json=None):
+    def post(self, url, data=None, json=None, headers=None):
         """http post"""
-        return self._request('POST', url, json=json)
+        return self._request('POST', url, data=data, json=json,
+                             headers=headers)
 
     def download(self, url, params=None, default_filename=None,
                  progress=False):

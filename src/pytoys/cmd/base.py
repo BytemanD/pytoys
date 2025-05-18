@@ -6,12 +6,14 @@ from loguru import logger
 import click
 
 from pytoys.common import command
-from pytoys.pip import repos
-from pytoys.vscode import extension as vscode_extension
 from pytoys.github import proxy
 from pytoys.net import ipinfo
 from pytoys.net import location
+from pytoys.net import utils
+from pytoys.pip import repos
+from pytoys.vscode import extension as vscode_extension
 from . import cli
+from . import custome_types
 
 
 @cli.group()
@@ -84,11 +86,18 @@ def local():
 
 
 @local.command()
-@click.option('--detail', is_flag=True, help='show detail')
-def info(detail=False):
+@click.option('--detail', is_flag=True, help='显示详情')
+@click.option('--ip', type=custome_types.TYPE_IPV4, help='指定IP地址')
+def info(detail=False, ip=None):
     """Get Local info"""
-    try:
-        local_info = {}
+    local_info = {}
+    if ip:
+        is_ip, ip_type = utils.is_valid_ip(ip)
+        if not is_ip or ip_type != 'v4':
+            logger.error('invalid ipv4 address')
+            return 1
+        local_info['ip'] = ip
+    else:
         for api in [ipinfo.IPinfoAPI(), ipinfo.IPApi()]:
             try:
                 public_ip = api.get_public_ip()
@@ -97,8 +106,9 @@ def info(detail=False):
             except IOError:
                 continue
         if 'ip' not in local_info:
-            raise IOError('get public ip failed')
-
+            logger.error('get public ip failed')
+            return 1
+    try:
         ip_location = location.Location()
         for api in [location.IP77Api(), location.UUToolApi()]:
             ip_location = api.get_location(local_info.get('ip'))

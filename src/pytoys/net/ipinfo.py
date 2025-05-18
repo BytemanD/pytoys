@@ -19,3 +19,12 @@ class IPApi(httpclient.HttpClient):
     def get_public_ip(self) -> str:
         resp = self.get('/json')
         return resp.json().get('query')
+
+
+def get_public_api() -> str:
+    for api in [IPinfoAPI(), IPApi()]:
+        try:
+            return api.get_public_ip()
+        except IOError:
+            continue
+    raise IOError('get public ip failed')

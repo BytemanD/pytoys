@@ -60,7 +60,8 @@ class HttpClient:
         resp_content = ''
         if resp_content_type \
            and ('application/json' in resp_content_type or \
-                'text/html' in resp_content_type):
+                'text/html' in resp_content_type or \
+                'text/plain' in resp_content_type):
             resp_content = resp.content.decode()
         if len(resp_content) > self.log_body_limit:
             resp_content = resp_content[0:self.log_body_limit] +'...'
@@ -84,7 +85,7 @@ class HttpClient:
                      content=self._get_log_body(resp))
         return resp
 
-    def _request(self, method, url, **kwargs):
+    def _request(self, method, url, **kwargs) -> requests.Response:
         """http request"""
         if url.startswith('https://') or url.startswith('http://'):
             req_url = url
@@ -97,12 +98,14 @@ class HttpClient:
         resp.raise_for_status()
         return resp
 
-    def get(self, url, params=None, stream=False, headers=None):
+    def get(self, url, params=None, stream=False,
+            headers=None) -> requests.Response:
         """http get"""
         return self._request('GET', url, params=params, stream=stream,
                              headers=headers)
 
-    def post(self, url, data=None, json=None, headers=None):
+    def post(self, url, data=None, json=None,
+             headers=None)  -> requests.Response:
         """http post"""
         return self._request('POST', url, data=data, json=json,
                              headers=headers)

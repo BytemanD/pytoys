@@ -7,8 +7,10 @@ import click
 
 from pytoys.common import command
 from pytoys.github import proxy
+from pytoys.net import areacode
 from pytoys.net import ipinfo
 from pytoys.net import location
+from pytoys.net import weather as weather_server
 from pytoys.net import utils
 from pytoys.pip import repos
 from pytoys.vscode import extension as vscode_extension
@@ -98,16 +100,7 @@ def info(detail=False, ip=None):
             return 1
         local_info['ip'] = ip
     else:
-        for api in [ipinfo.IPinfoAPI(), ipinfo.IPApi()]:
-            try:
-                public_ip = api.get_public_ip()
-                local_info['ip'] = public_ip
-                break
-            except IOError:
-                continue
-        if 'ip' not in local_info:
-            logger.error('get public ip failed')
-            return 1
+        local_info['ip'] = ipinfo.get_public_api()
     try:
         ip_location = location.Location()
         for api in [location.IP77Api(), location.UUToolApi()]:
@@ -125,6 +118,24 @@ def info(detail=False, ip=None):
     except IOError as e:
         logger.error("get local info failed: {}", e)
         return 1
+
+
+# @local.command()
+# @click.option('--area', type=custome_types.TYPE_AREA,
+#               help='指定区域(省,市,县|区),例如:北京市,北京市,东城区')
+# def weather(area: custome_types.Area=None):
+#     """Get weather"""
+#     if not area:
+#         ip_api = ipinfo.IPinfoAPI()
+#         public_ip = ip_api.get_public_ip()
+#         local_api = location.IP77Api()
+#         data = local_api.get_location(public_ip)
+#         area = custome_types.Area(data.province, data.city, data.district)
+
+#     api = areacode.XzqhMcaGovApi()
+#     code = api.get_areacode(area.province, area.city, area.district)
+#     weather_api = weather_server.XDApi()
+#     print(weather_api.get_weather(code))
 
 
 if __name__ == '__main__':

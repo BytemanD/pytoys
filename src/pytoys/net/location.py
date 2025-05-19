@@ -1,5 +1,7 @@
 import dataclasses
 
+import requests
+
 from pytoys.common import httpclient
 
 

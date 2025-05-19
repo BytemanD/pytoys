@@ -4,6 +4,7 @@ from urllib import parse
 
 from loguru import logger
 import click
+from termcolor import cprint, colored
 
 from pytoys.common import command
 from pytoys.github import proxy
@@ -120,22 +121,62 @@ def info(detail=False, ip=None):
         return 1
 
 
-# @local.command()
-# @click.option('--area', type=custome_types.TYPE_AREA,
-#               help='指定区域(省,市,县|区),例如:北京市,北京市,东城区')
-# def weather(area: custome_types.Area=None):
-#     """Get weather"""
-#     if not area:
-#         ip_api = ipinfo.IPinfoAPI()
-#         public_ip = ip_api.get_public_ip()
-#         local_api = location.IP77Api()
-#         data = local_api.get_location(public_ip)
-#         area = custome_types.Area(data.province, data.city, data.district)
+WEATHER_TEMPLATE = """
+🕧 {date}     🌎 {area}
 
-#     api = areacode.XzqhMcaGovApi()
-#     code = api.get_areacode(area.province, area.city, area.district)
-#     weather_api = weather_server.XDApi()
-#     print(weather_api.get_weather(code))
+  天气: {weather}   🌡️ {temperature}
+  风向: {winddirection}
+  风力: {windpower}
+  湿度: {humidity}
+
+  {reporttime}
+"""
+
+@local.command()
+@click.option('--area', type=custome_types.TYPE_AREA,
+              help='指定区域(省,市,县|区),例如:北京市,北京市,东城区')
+def weather(area: custome_types.Area=None):
+    """Get weather"""
+    if not area:
+        logger.debug('get public ip')
+        ip_api = ipinfo.IPinfoAPI()
+        public_ip = ip_api.get_public_ip()
+        local_api = location.IP77Api()
+        logger.debug('get area')
+        data = local_api.get_location(public_ip)
+        area = custome_types.Area(data.province, data.city, data.district)
+
+    logger.debug('get area code for {}', area)
+    api = areacode.WenyisoApi()
+    for value in [area.district, area.district + '县', area.district + '区',
+                  area.city, area.city + '市',
+                  area.province, area.province + '省']:
+        if not value:
+            continue
+        try:
+            code = api.get_areacode(value)
+            if not code:
+                continue
+        except ValueError as e:
+            continue
+        else:
+            weather_api = weather_server.XDApi()
+            weather = weather_api.get_weather(code)
+            import datetime
+            result = WEATHER_TEMPLATE.format(
+                date=datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                area=colored(area, 'red'),
+                reporttime=colored(f'更新时间: {weather.reporttime}',
+                                   'grey'),
+                weather=colored(weather.weather, 'cyan'),
+                temperature=colored(f'{weather.temperature}℃' , 'cyan'),
+                winddirection=colored(weather.winddirection, 'blue'),
+                windpower=colored(weather.windpower, 'blue'),
+                humidity=colored(weather.humidity, 'yellow'),
+            )
+            print(result)
+            return 0
+    raise ValueError('get weather failed, area code not found')
 
 
 if __name__ == '__main__':

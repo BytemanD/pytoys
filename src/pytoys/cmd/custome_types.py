@@ -1,5 +1,6 @@
-import dataclasses
 import click
+import dataclasses
+import re
 
 from pytoys.net import utils
 
@@ -9,6 +10,9 @@ class Area:
     province: str
     city: str
     district: str
+
+    def __str__(self):
+        return f"{self.province}-{self.city}-{self.district}"
 
 
 class IPv4Type(click.ParamType):
@@ -30,7 +34,7 @@ class AreaType(click.ParamType):
     def convert(self, value, param, ctx) -> Area:
         if isinstance(value, str):
             try:
-                province, city, district = value.split(',')
+                province, city, district = re.split(r',|，', value)
                 return Area(province, city, district)
             except ValueError:
                 pass

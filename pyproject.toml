@@ -29,4 +29,5 @@ distribution = true
 
 [tool.pylint."MESSAGES CONTROL"]
 disable = ["invalid-name", "missing-docstring", "missing-module-docstring",
-           "too-many-instance-attributes", "too-few-public-methods"]
+           "too-many-instance-attributes", "too-few-public-methods",
+           "inconsistent-return-statements"]

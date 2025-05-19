@@ -1,10 +1,11 @@
+import datetime
 import subprocess
 import sys
 from urllib import parse
 
 from loguru import logger
 import click
-from termcolor import cprint, colored
+from termcolor import colored
 
 from pytoys.common import command
 from pytoys.github import proxy
@@ -157,22 +158,21 @@ def weather(area: custome_types.Area=None):
             code = api.get_areacode(value)
             if not code:
                 continue
-        except ValueError as e:
+        except ValueError:
             continue
         else:
             weather_api = weather_server.XDApi()
-            weather = weather_api.get_weather(code)
-            import datetime
+            data = weather_api.get_weather(code)
             result = WEATHER_TEMPLATE.format(
                 date=datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
                 area=colored(area, 'red'),
-                reporttime=colored(f'更新时间: {weather.reporttime}',
+                reporttime=colored(f'更新时间: {data.reporttime}',
                                    'grey'),
-                weather=colored(weather.weather, 'cyan'),
-                temperature=colored(f'{weather.temperature}℃' , 'cyan'),
-                winddirection=colored(weather.winddirection, 'blue'),
-                windpower=colored(weather.windpower, 'blue'),
-                humidity=colored(weather.humidity, 'yellow'),
+                weather=colored(data.weather, 'cyan'),
+                temperature=colored(f'{data.temperature}℃' , 'cyan'),
+                winddirection=colored(data.winddirection, 'blue'),
+                windpower=colored(data.windpower, 'blue'),
+                humidity=colored(data.humidity, 'yellow'),
             )
             print(result)
             return 0

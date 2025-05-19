@@ -1,6 +1,7 @@
-import click
 import dataclasses
 import re
+
+import click
 
 from pytoys.net import utils
 

@@ -1,16 +1,21 @@
 [project]
 name = "pytoys"
 version = "0.1.0"
-description = "Default template for PDM package"
+description = "Python toys for fun and learning"
 authors = [
     {name = "BytemanD", email = "byteman.d@outlook.com"},
 ]
-dependencies = ["click>=8.1.8", "loguru>=0.7.3", "prettytable>=3.16.0",
-                "termcolor>=3.1.0",
-                "tqdm>=4.67.1",
-                "qrcode>=8.2",
-                "Pillow>=11.2.1",
-                "pyzbar>=0.1.9"]
+dependencies = [
+    "click>=8.1.8",
+    "loguru>=0.7.3",
+    "prettytable>=3.16.0",
+    "termcolor>=3.1.0",
+    "tqdm>=4.67.1",
+    "qrcode>=8.2",
+    "Pillow>=11.2.1",
+    "pyzbar>=0.1.9",
+    "requests>=2.32.3",
+]
 requires-python = ">=3.10"
 readme = "README.md"
 license = {text = "MIT"}
@@ -20,12 +25,6 @@ pytoys = "pytoys.cmd.base:cli"
 pytoys-ext = "pytoys.cmd.ext:cli"
 pytoys-win = "pytoys.cmd.win:cli"
 
-[build-system]
-requires = ["pdm-backend"]
-build-backend = "pdm.backend"
-
-[tool.pdm]
-distribution = true
 
 [tool.pylint."MESSAGES CONTROL"]
 disable = ["invalid-name", "missing-docstring", "missing-module-docstring",

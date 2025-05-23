@@ -16,6 +16,8 @@ RESP_TEMPLATE = """http request:
 {status_code} {reason}
 {resp_headers}
 Body: {content}
+
+(Elapsed: {elapsed:.3f}s)
 """
 
 class NopProgress:
@@ -31,12 +33,13 @@ class NopProgress:
         pass
 
 
-def _parse_request_to_curl(request: requests.Request) -> str:
+def _parse_request_to_curl(request: requests.PreparedRequest) -> str:
     cmd = ['curl', f'-X{request.method}', f"'{request.url}'"]
     for k, v in request.headers.items():
         cmd.append(f"-H '{k}: {v}'")
     req_type = request.headers.get('content-type')
-    if req_type in ['application/json', 'text/html']:
+    if req_type in ['application/json', 'text/html'] \
+       and isinstance(request.body, bytes):
         cmd.append(f"-d '{request.body.decode()}'")
     elif isinstance(request.body, str):
         cmd.append(f"-d '{request.body}'")
@@ -48,7 +51,7 @@ def _parse_request_to_curl(request: requests.Request) -> str:
 class HttpClient:
     """HttpClient with requests"""
 
-    def __init__(self, base_url=None, timeout=None, log_body_limit=128):
+    def __init__(self, base_url, timeout=None, log_body_limit=128):
         self.base_url = base_url
         self.timeout = timeout
         self.log_body_limit = log_body_limit
@@ -82,7 +85,8 @@ class HttpClient:
                      request=_parse_request_to_curl(resp.request),
                      status_code=resp.status_code, reason=resp.reason,
                      resp_headers=_parse_resp_headers(resp.headers),
-                     content=self._get_log_body(resp))
+                     content=self._get_log_body(resp),
+                     elapsed=resp.elapsed.total_seconds())
         return resp
 
     def _request(self, method, url, **kwargs) -> requests.Response:
@@ -115,7 +119,7 @@ class HttpClient:
         """http download"""
         resp = self.get(url, params=params, stream=True)
         matched = re.match(r'.*filename=(.+);',
-                           resp.headers.get('content-disposition'))
+                           resp.headers.get('content-disposition') or '')
         if matched:
             filename = matched.group(1)
         elif default_filename:
@@ -125,10 +129,10 @@ class HttpClient:
 
         logger.info('save to {}, size: {}', filename,
                     resp.headers.get('content-length'))
-        total = int(resp.headers.get("content-length"))
-        if progress:
+        total = resp.headers.get("content-length")
+        if total and progress:
             progressbar = tqdm.tqdm(desc=f"Downloading {filename}",
-                                    total=total, unit='iB')
+                                    total=int(total), unit='iB')
         else:
             progressbar = NopProgress()
 

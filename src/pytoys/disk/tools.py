@@ -8,7 +8,7 @@ from loguru import logger
 def compress_virtual_disk(vhd_path: str):
     """
     使用diskpart压缩虚拟磁盘(VHD/VHDX)
-    
+
     参数:
         vhd_path (str): 虚拟磁盘文件的完整路径
     """

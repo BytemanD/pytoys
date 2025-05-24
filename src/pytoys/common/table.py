@@ -12,7 +12,7 @@ class DataTable(prettytable.PrettyTable):
         self.data_fields = fields or []
         self.index = index
         if not fields and title:
-            self.data_fields = [x for x in title.keys()]
+            self.data_fields = list(title.keys())
         field_names = [title.get(field, field) for field in self.data_fields]
         super().__init__((self.index and ['#'] or []) + field_names, **kwargs)
 

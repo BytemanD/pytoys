@@ -5,6 +5,7 @@ import click
 from loguru import logger
 
 from pytoys.disk import tools
+
 from . import cli
 
 
@@ -14,7 +15,7 @@ def disk():
 
 
 @disk.command()
-@click.argument('vhd_path')
+@click.argument("vhd_path")
 def compress_vhd(vhd_path):
     """Compress vhd/vhdx disk"""
     try:
@@ -23,5 +24,5 @@ def compress_vhd(vhd_path):
         logger.error("run diskpart failed: {}", e)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.exit(cli())

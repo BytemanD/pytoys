@@ -25,9 +25,8 @@ pytoys = "pytoys.cmd.base:cli"
 pytoys-ext = "pytoys.cmd.ext:cli"
 pytoys-win = "pytoys.cmd.win:cli"
 
-
-[tool.pylint."MESSAGES CONTROL"]
-disable = ["invalid-name", "missing-docstring", "missing-module-docstring",
+[tool.pylint.messages_control]
+disable = ["missing-docstring",
            "too-many-instance-attributes", "too-few-public-methods",
            "inconsistent-return-statements",
            "too-many-arguments", "too-many-positional-arguments"]

@@ -20,3 +20,11 @@ uv run python -m pytoys.cmd.win
 ```bash
 uv build
 ```
+
+## 格式化
+
+```bash
+bash scripts/autofix.sh
+# OR
+uv run bash scripts/autofix.sh
+```

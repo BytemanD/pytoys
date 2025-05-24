@@ -4,8 +4,8 @@ import io
 from pyzbar import pyzbar
 
 with contextlib.suppress(ImportError):
-    from PIL import Image
     import qrcode
+    from PIL import Image
 
 
 class QRCodeExtend(qrcode.QRCode):
@@ -14,14 +14,11 @@ class QRCodeExtend(qrcode.QRCode):
     >>> code.add_data('http://www.baidu.com')
     >>> lines = code.parse_string_lines()
     """
-    char_map = {
-        True: {True: '█', False: '▀'},
-        False: {True: '▄', False: ' '}
-    }
+
+    char_map = {True: {True: "█", False: "▀"}, False: {True: "▄", False: " "}}
 
     def parse_string_lines(self):
-        """parse qrcode to string lines
-        """
+        """parse qrcode to string lines"""
         matrix = self.get_matrix()
         rows = len(matrix)
         columns = len(matrix[0])
@@ -31,14 +28,14 @@ class QRCodeExtend(qrcode.QRCode):
         def get_char(x, y):
             x_next = x + 1
             return self.char_map.get(matrix[x][y]).get(matrix[x_next][y])
+
         lines = []
         for line in range(0, rows, 2):
-            lines.append(''.join([get_char(line, i) for i in range(columns)]))
+            lines.append("".join([get_char(line, i) for i in range(columns)]))
         return lines
 
     def parse_image_buffer(self):
-        """parse qrcode to BytesIO buffer
-        """
+        """parse qrcode to BytesIO buffer"""
         buffer = io.BytesIO()
         self.make_image().save(buffer)
         return buffer
@@ -50,6 +47,4 @@ class QRCodeExtend(qrcode.QRCode):
     @classmethod
     def dump(cls, filename):
         img = Image.open(filename)
-        return [
-            txt.data.decode("utf-8") for txt in pyzbar.decode(img)
-        ]
+        return [txt.data.decode("utf-8") for txt in pyzbar.decode(img)]

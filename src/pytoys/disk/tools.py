@@ -1,7 +1,8 @@
-import subprocess
 import os
+import subprocess
 import sys
 import tempfile
+
 from loguru import logger
 
 
@@ -17,7 +18,7 @@ def compress_virtual_disk(vhd_path: str):
         raise FileNotFoundError(f"虚拟磁盘文件不存在: {vhd_path}")
 
     # 检查文件扩展名
-    if not vhd_path.lower().endswith(('.vhd', '.vhdx')):
+    if not vhd_path.lower().endswith((".vhd", ".vhdx")):
         raise ValueError("文件必须是VHD或VHDX格式")
 
     # 创建diskpart脚本内容
@@ -29,8 +30,9 @@ def compress_virtual_disk(vhd_path: str):
     """
 
     # 临时脚本文件路径
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.txt',
-                                     delete=False) as temp_file:
+    with tempfile.NamedTemporaryFile(
+        mode="w", suffix=".txt", delete=False
+    ) as temp_file:
         logger.info("创建临时脚本: {}", temp_file.name)
         temp_file.write(diskpart_script)
         temp_file.flush()  # 确保数据写入文件
@@ -44,9 +46,13 @@ def compress_virtual_disk(vhd_path: str):
 
     try:
         # 执行diskpart命令
-        subprocess.run(['diskpart', '/s', temp_script_path],
-                       stdout=sys.stdout, stderr=sys.stderr,
-                       text=True, check=True)
+        subprocess.run(
+            ["diskpart", "/s", temp_script_path],
+            stdout=sys.stdout,
+            stderr=sys.stderr,
+            text=True,
+            check=True,
+        )
         logger.success("虚拟磁盘 {} 压缩完成", vhd_path)
     finally:
         # 删除临时脚本文件

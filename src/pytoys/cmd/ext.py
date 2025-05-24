@@ -1,9 +1,10 @@
 import sys
 
-from loguru import logger
 import click
+from loguru import logger
 
 from pytoys.code import qrcode as qrcodetools
+
 from . import cli
 
 
@@ -13,9 +14,8 @@ def qrcode():
 
 
 @qrcode.command()
-@click.argument('text')
-@click.option('-o', '--output', default=None, type=click.Path(),
-              help='output file')
+@click.argument("text")
+@click.option("-o", "--output", default=None, type=click.Path(), help="output file")
 def encode(text, output=None):
     """生成二维码"""
     code = qrcodetools.QRCodeExtend()
@@ -29,5 +29,5 @@ def encode(text, output=None):
     return 0
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.exit(cli())

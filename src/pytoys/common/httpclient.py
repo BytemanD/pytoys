@@ -115,9 +115,8 @@ class HttpClient:
         """http post"""
         return self._request("POST", url, data=data, json=json, headers=headers)
 
-    def download(
-        self, url, params=None, default_filename=None, progress=False, output: Optional[str] = None
-    ) -> None:
+    def download(self, url, params=None, default_filename=None, progress=False,
+                 output: Optional[str] = None) -> None:                                # fmt: skip
         """http download"""
         resp = self.get(url, params=params, stream=True)
         save_response(resp, default_filename=default_filename, progress=progress, output=output)

@@ -20,6 +20,14 @@ requires-python = ">=3.10"
 readme = "README.md"
 license = {text = "MIT"}
 
+[dependency-groups]
+dev = [
+    "autoflake>=2.3.1",
+    "black>=25.1.0",
+    "isort>=6.0.1",
+    "pylint>=3.3.7",
+]
+
 [project.scripts]
 pytoys = "pytoys.cmd.base:cli"
 pytoys-ext = "pytoys.cmd.ext:cli"
@@ -31,10 +39,13 @@ disable = ["missing-docstring",
            "inconsistent-return-statements",
            "too-many-arguments", "too-many-positional-arguments"]
 
-[dependency-groups]
-dev = [
-    "autoflake>=2.3.1",
-    "black>=25.1.0",
-    "isort>=6.0.1",
-    "pylint>=3.3.7",
-]
+[tool.black]
+line-length = 100
+
+[tool.pylint]
+# 启用彩色输出
+output-format = "colorized"
+
+[tool.pylint.format]
+# 强制使用 LF 换行符（Unix 风格）
+expected-line-ending-format = "LF"

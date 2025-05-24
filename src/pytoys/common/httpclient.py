@@ -1,6 +1,8 @@
-from urllib import parse
-import re
 import io
+import os
+import re
+from typing import Optional
+from urllib import parse
 
 from loguru import logger
 import requests
@@ -115,13 +117,14 @@ class HttpClient:
                              headers=headers)
 
     def download(self, url, params=None, default_filename=None,
-                 progress=False):
+                 progress=False, output: Optional[str]=None) -> None:
         """http download"""
         resp = self.get(url, params=params, stream=True)
         matched = re.match(r'.*filename=(.+);',
                            resp.headers.get('content-disposition') or '')
         if matched:
             filename = matched.group(1)
+            filename = filename.replace("'", '').replace('"', '')
         elif default_filename:
             filename = default_filename
         else:
@@ -136,7 +139,10 @@ class HttpClient:
         else:
             progressbar = NopProgress()
 
-        with open(filename, 'wb') as f:
+        if output:
+            os.makedirs(output, exist_ok=True)
+        output_file = os.path.join(output, filename) if output else filename
+        with open(output_file, 'wb') as f:
             for chunk in resp.iter_content(chunk_size=io.DEFAULT_BUFFER_SIZE):
                 f.write(chunk)
                 logger.debug(f"write {len(chunk)} bytes")

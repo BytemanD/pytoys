@@ -1,8 +1,10 @@
 """VSCode extension api from marketplace"""
 import dataclasses
 import json
+from typing import Optional
 
 from loguru import logger
+import prettytable
 
 from pytoys.common import user_input
 from pytoys.common import httpclient
@@ -18,7 +20,7 @@ class Extension:
     publisher_id: str
     publisher_name: str
     publisher_display_name: str
-    flags: str = None
+    flags: Optional[str] = None
 
     def filename(self):
         """Get file name"""
@@ -65,11 +67,11 @@ class MarketplaceAPI(httpclient.HttpClient):
         if len(results) < 1:
             return []
 
-        def get_version(extension):
+        def get_version(extension) -> str:
             for version in extension.get('versions') or []:
                 if 'version' in version:
                     return version.get('version')
-            return None
+            return ''
 
         extensions = results[0].get('extensions', [])
         return [
@@ -86,30 +88,36 @@ class MarketplaceAPI(httpclient.HttpClient):
             ) for ext in extensions
         ]
 
-    def download_extension(self, ext: Extension):
+    def download_extension(self, ext: Extension, output: Optional[str]=None):
         """Download extension from marketplace"""
         logger.info('download extension: {}({})', ext.display_name,
                     ext.name)
         url = f'/_apis/public/gallery/publishers/{ext.publisher_name}/' \
               f'vsextensions/{ext.name}/{ext.version}/vspackage'
 
-        self.download(url, default_filename=ext.filename(), progress=True)
+        self.download(url, default_filename=ext.filename(), progress=True,
+                      output=output)
         logger.success('download success')
 
-    def search_and_download(self, name):
+    def search_and_download(self, name, output: Optional[str]=None):
         """Search and download extension"""
         logger.info('search extension: {}', name)
         items = self.search(name)
         if not items:
             raise ExtensionNotFound(name)
 
+        def prerender(dt: prettytable.PrettyTable):
+            dt.max_width.update({'插件': 40})
+            dt.align.update({'插件': 'l', '发布者': 'l', '版本': 'l', '标签': 'l'})
+
         item = user_input.select_items(
             [dataclasses.asdict(item) for item in items],
-            {'display_name', 'publisher_display_name', 'version', 'flags'},
+            ['display_name', 'publisher_display_name', 'version', 'flags'],
             title={'display_name': '插件', 'publisher_display_name': '发布者',
                    'version': '版本', 'flags': '标签'},
             select_msg='查询结果:',
+            prerender=prerender,
         )
         if not item:
             return
-        self.download_extension(Extension(**item))
+        self.download_extension(Extension(**item), output=output)

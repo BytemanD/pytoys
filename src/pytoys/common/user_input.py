@@ -1,9 +1,11 @@
-from typing import List, Dict
+from typing import List, Dict, Optional, Callable
 
 import prettytable
 from termcolor import colored, cprint
 
-from pytoys.common import prettytable
+from pytoys.common import table
+
+FuncPrefender = Callable[[prettytable.PrettyTable], None]
 
 
 def get_input_number(message, min_number=None, max_number=None,
@@ -32,21 +34,25 @@ def get_input_number(message, min_number=None, max_number=None,
             input_index = input_index.strip()
 
 
-def select_items(items: List[dict], headers: List[str], title: Dict=None,
-                 select_msg: str=None, input_msg: str=None) -> dict:
+def select_items(items: List[dict], headers: List[str],
+                 title: Optional[Dict]=None, select_msg: Optional[str]=None,
+                 input_msg: Optional[str]=None,
+                 prerender: Optional[FuncPrefender]=None) -> dict:
     """打印items列表, 并获取用户选择结果"""
 
     title = title or {}
     select_msg = select_msg or '请选择:'
     input_msg = input_msg or '请输入编号'
 
-    table = prettytable.Table(['#'] + [title.get(h, h) for h in headers],
-                              style=prettytable.STYLE_LIGHT)
-    for i, item in enumerate(items):
-        table.add_row([i+1] + [item.get(h) for h in headers])
+    dt = table.DataTable(headers, title=title, index=True)
+    dt.set_style(prettytable.TableStyle.SINGLE_BORDER)
+    dt.add_items(items)
+
+    if prerender:
+        prerender(dt)
 
     cprint(select_msg, color='cyan')
-    print(table)
+    print(dt)
     selected = get_input_number(input_msg, min_number=1, max_number=len(items))
     if not selected:
         return {}

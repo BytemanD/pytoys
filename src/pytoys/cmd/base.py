@@ -2,9 +2,10 @@ import datetime
 import subprocess
 import sys
 from urllib import parse
+from typing import Optional
 
-from loguru import logger
 import click
+from loguru import logger
 from termcolor import colored
 
 from pytoys.common import command
@@ -55,11 +56,12 @@ def vscode():
 
 @vscode.command()
 @click.argument('name')
-def download_extension(name):
+@click.option('-o', '--output', type=click.Path(), help='保存路径')
+def download_extension(name, output=None):
     """下载插件"""
     try:
         api = vscode_extension.MarketplaceAPI()
-        api.search_and_download(name)
+        api.search_and_download(name, output=output)
         return 0
     except vscode_extension.ExtensionNotFound as e:
         logger.error("download {} failed failed: {}", name, e)
@@ -136,7 +138,7 @@ WEATHER_TEMPLATE = """
 @local.command()
 @click.option('--area', type=custome_types.TYPE_AREA,
               help='指定区域(省,市,县|区),例如:北京市,北京市,东城区')
-def weather(area: custome_types.Area=None):
+def weather(area: Optional[custome_types.Area]=None):
     """Get weather"""
     if not area:
         logger.debug('get public ip')

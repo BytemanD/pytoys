@@ -30,3 +30,11 @@ disable = ["missing-docstring",
            "too-many-instance-attributes", "too-few-public-methods",
            "inconsistent-return-statements",
            "too-many-arguments", "too-many-positional-arguments"]
+
+[dependency-groups]
+dev = [
+    "autoflake>=2.3.1",
+    "black>=25.1.0",
+    "isort>=6.0.1",
+    "pylint>=3.3.7",
+]

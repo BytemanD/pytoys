@@ -43,9 +43,7 @@ class UUToolApi(httpclient.HttpClient):
         super().__init__("https://api.uutool.cn")
 
     def get_location(self, ipaddr) -> Location:
-        resp = self.get(
-            f"/ip/location/?ip={ipaddr}", headers={"accept-language": "zh-CN"}
-        )
+        resp = self.get(f"/ip/location/?ip={ipaddr}", headers={"accept-language": "zh-CN"})
         data = resp.json()
         return Location(**data.get("data"))
 

@@ -1,5 +1,8 @@
+
+MAX_LINE_LENGTH=100
+
 echo -e "\033[44;37m      bloack      \033[0m"
-black src
+black --line-length ${MAX_LINE_LENGTH} src
 echo
 
 echo -e "\033[44;37m    autoflake     \033[0m"
@@ -11,5 +14,5 @@ isort src
 echo
 
 echo -e "\033[44;37m      pylint      \033[0m"
-pylint src
+pylint --max-line-length ${MAX_LINE_LENGTH} src
 echo

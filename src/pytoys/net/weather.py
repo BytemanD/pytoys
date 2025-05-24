@@ -23,9 +23,7 @@ class XDApi(httpclient.HttpClient):
         resp = self.get("/api/v2/Weather/city", params={"code": areacode})
         data = resp.json()
         if data.get("code") != 1 or not data.get("data"):
-            raise ValueError(
-                f'get weather failed, {data.get("msg")}, ' f'data: {data.get("data")}'
-            )
+            raise ValueError(f'get weather failed, {data.get("msg")}, ' f'data: {data.get("data")}')
         value = data.get("data")[0]
         return Weather(
             weather=value.get("weather"),

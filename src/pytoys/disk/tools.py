@@ -30,9 +30,7 @@ def compress_virtual_disk(vhd_path: str):
     """
 
     # 临时脚本文件路径
-    with tempfile.NamedTemporaryFile(
-        mode="w", suffix=".txt", delete=False
-    ) as temp_file:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as temp_file:
         logger.info("创建临时脚本: {}", temp_file.name)
         temp_file.write(diskpart_script)
         temp_file.flush()  # 确保数据写入文件

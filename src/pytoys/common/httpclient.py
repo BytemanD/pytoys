@@ -41,9 +41,7 @@ def _parse_request_to_curl(request: requests.PreparedRequest) -> str:
     for k, v in request.headers.items():
         cmd.append(f"-H '{k}: {v}'")
     req_type = request.headers.get("content-type")
-    if req_type in ["application/json", "text/html"] and isinstance(
-        request.body, bytes
-    ):
+    if req_type in ["application/json", "text/html"] and isinstance(request.body, bytes):
         cmd.append(f"-d '{request.body.decode()}'")
     elif isinstance(request.body, str):
         cmd.append(f"-d '{request.body}'")
@@ -104,9 +102,7 @@ class HttpClient:
             req_url = url
         else:
             req_url = parse.urljoin(self.base_url, url.lstrip("/"))
-        logger.debug(
-            "Request: {} {}, params={}", method, req_url, kwargs.get("params", "")
-        )
+        logger.debug("Request: {} {}, params={}", method, req_url, kwargs.get("params", ""))
         resp = self.session.request(method, req_url, timeout=self.timeout, **kwargs)
         resp.raise_for_status()
         return resp
@@ -120,42 +116,46 @@ class HttpClient:
         return self._request("POST", url, data=data, json=json, headers=headers)
 
     def download(
-        self,
-        url,
-        params=None,
-        default_filename=None,
-        progress=False,
-        output: Optional[str] = None,
+        self, url, params=None, default_filename=None, progress=False, output: Optional[str] = None
     ) -> None:
         """http download"""
         resp = self.get(url, params=params, stream=True)
-        matched = re.match(
-            r".*filename=(.+);", resp.headers.get("content-disposition") or ""
-        )
-        if matched:
-            filename = matched.group(1)
-            filename = filename.replace("'", "").replace('"', "")
-        elif default_filename:
-            filename = default_filename
-        else:
-            filename = url.split("/")[-1]
+        save_response(resp, default_filename=default_filename, progress=progress, output=output)
 
-        logger.info(
-            "save to {}, size: {}", filename, resp.headers.get("content-length")
-        )
-        total = resp.headers.get("content-length")
-        if total and progress:
-            progressbar = tqdm.tqdm(
-                desc=f"Downloading {filename}", total=int(total), unit="iB"
-            )
-        else:
-            progressbar = NopProgress()
 
-        if output:
-            os.makedirs(output, exist_ok=True)
-        output_file = os.path.join(output, filename) if output else filename
-        with open(output_file, "wb") as f:
-            for chunk in resp.iter_content(chunk_size=io.DEFAULT_BUFFER_SIZE):
-                f.write(chunk)
-                logger.debug(f"write {len(chunk)} bytes")
-                progressbar.update(len(chunk))
+def save_response(resp: requests.Response, default_filename=None, progress=False,
+                  output: Optional[str]=None) -> None:                                  # fmt: skip
+    """Save response to file"""
+    matched = re.match(r".*filename=(.+);", resp.headers.get("content-disposition") or "")
+    if matched:
+        filename = matched.group(1)
+        filename = filename.replace("'", "").replace('"', "")
+    elif default_filename:
+        filename = default_filename
+    elif resp.request.url:
+        filename = resp.request.url.split("/")[-1]
+    else:
+        raise ValueError("no filename found")
+
+    output_file = os.path.join(output, filename) if output else filename
+    if output:
+        os.makedirs(output, exist_ok=True)
+    logger.info("save file: {}", output_file)
+
+    total = resp.headers.get("content-length")
+    if total and progress:
+        progressbar = tqdm.tqdm(desc=f"Downloading {filename}", total=int(total), unit="iB")
+    else:
+        progressbar = NopProgress()
+
+    with open(output_file, "wb") as f:
+        for chunk in resp.iter_content(chunk_size=io.DEFAULT_BUFFER_SIZE):
+            f.write(chunk)
+            progressbar.update(len(chunk))
+
+
+def get_and_save(url, params=None, timeout=None, default_filename=None, output=None,
+                 progress=False):                                                       # fmt: skip
+    """Download file from url"""
+    resp = requests.get(url, params=params, timeout=timeout, stream=True)
+    save_response(resp, default_filename=default_filename, progress=progress, output=output)

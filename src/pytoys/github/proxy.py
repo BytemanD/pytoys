@@ -5,6 +5,8 @@ from urllib import parse
 import requests
 from loguru import logger
 
+from pytoys.common import httpclient
+
 
 class AllProxyDownloadFailed(Exception):
 
@@ -47,30 +49,16 @@ class AkamsProxy(GitProxyServer):
 def download(github_url, timeout=60 * 10):
     proxy_list = [GhProxy, AkamsProxy]
     for proxy_cls in proxy_list:
-        proxy_driver = proxy_cls()
+        proxy_driver: GhProxy | AkamsProxy = proxy_cls()
         logger.info("downlowd with proxy {}", proxy_cls.__name__)
         for proxy_url in proxy_driver.get_proxy_urls(github_url):
             try:
-                logger.info("download with proxy url: {}", proxy_url)
-                resp = requests.get(proxy_url, timeout=timeout)
-            except (
-                requests.HTTPError,
-                requests.Timeout,
-                requests.ConnectionError,
-                requests.ConnectTimeout,
-            ) as e:
+                logger.debug("download with proxy url: {}", proxy_url)
+                httpclient.get_and_save(proxy_url, timeout=timeout, progress=True)
+                return
+            except (requests.HTTPError, requests.Timeout, requests.ConnectionError,
+                    requests.ConnectTimeout) as e:                                  # fmt: skip
                 logger.warning("get with proxy {} failed, {}", proxy_url, e)
                 continue
-
-            filename = resp.headers.get("Content-Disposition")
-            if filename:
-                filename = parse.unquote(filename.split("=")[-1])
-            else:
-                filename = github_url.split("/")[-1]
-
-            logger.info("save file: {}", filename)
-            with open(filename, "wb") as f:
-                f.write(resp.content)
-            return
 
     raise AllProxyDownloadFailed(github_url)

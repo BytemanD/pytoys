@@ -91,9 +91,7 @@ class MarketplaceAPI(httpclient.HttpClient):
             f"vsextensions/{ext.name}/{ext.version}/vspackage"
         )
 
-        self.download(
-            url, default_filename=ext.filename(), progress=True, output=output
-        )
+        self.download(url, default_filename=ext.filename(), progress=True, output=output)
         logger.success("download success")
 
     def search_and_download(self, name, output: Optional[str] = None):

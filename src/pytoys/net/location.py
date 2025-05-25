@@ -1,4 +1,5 @@
 import dataclasses
+from typing import Optional
 
 from pytoys.common import httpclient
 
@@ -6,7 +7,7 @@ from pytoys.common import httpclient
 @dataclasses.dataclass
 class Location:
     ip: str = ""
-    ip_int: int = None
+    ip_int: Optional[int] = None
     isp: str = ""
     continent: str = ""
     country: str = ""
@@ -28,7 +29,7 @@ class Location:
     def info(self):
         if self.location:
             return self.location
-        data = f"{self.country}{self.province}{self.city}"
+        data = f"{self.country or ''}{self.province or ''}{self.city or ''}{self.district or ''}"
         if self.isp:
             data += f"{data}({self.isp})"
         return data

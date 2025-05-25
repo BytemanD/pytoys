@@ -1,11 +1,8 @@
-import contextlib
 import io
 
+import qrcode
+from PIL import Image
 from pyzbar import pyzbar
-
-with contextlib.suppress(ImportError):
-    import qrcode
-    from PIL import Image
 
 
 class QRCodeExtend(qrcode.QRCode):
@@ -25,9 +22,9 @@ class QRCodeExtend(qrcode.QRCode):
         if rows / 2 != 0:
             matrix.append([False] * columns)
 
-        def get_char(x, y):
+        def get_char(x, y) -> str:
             x_next = x + 1
-            return self.char_map.get(matrix[x][y]).get(matrix[x_next][y])
+            return self.char_map.get(matrix[x][y], {}).get(matrix[x_next][y], "")
 
         lines = []
         for line in range(0, rows, 2):

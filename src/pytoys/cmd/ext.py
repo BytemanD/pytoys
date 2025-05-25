@@ -25,7 +25,7 @@ def encode(text, output=None):
         logger.success("save qrcode to {}", output)
         return 0
     for line in code.parse_string_lines():
-        print(line)
+        click.echo(line)
     return 0
 
 

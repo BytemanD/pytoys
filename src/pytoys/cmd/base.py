@@ -169,15 +169,15 @@ def bing():
 def download_image(date: Optional[str] = None, timeout: Optional[int] = None):
     """Get weather"""
 
-    api = bingimage.BingNpanuhinAPI()
+    api = bingimage.BingNpanuhinAPI(timeout=timeout)
     try:
         images = api.get_bing_images(date=date)
     except (httpclient.HttpError, httpclient.RequestError) as e:
         logger.error("get images failed: {}", e)
         return 1
-
     if not images:
-        raise ValueError("no images found")
+        logger.error("no images found")
+        return 1
 
     logger.info("download {} image(s)", len(images))
     for image in images:

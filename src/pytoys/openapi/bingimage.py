@@ -27,8 +27,8 @@ class BingNpanuhinAPI(httpclient.HttpClient):
     https://bing.npanuhin.me/
     """
 
-    def __init__(self):
-        super().__init__("https://bing.npanuhin.me", timeout=30)
+    def __init__(self, timeout: Optional[int] = None):
+        super().__init__("https://bing.npanuhin.me", timeout=timeout)
 
     def get_bing_images(self, country: str='CN', language: str='zh',
                         date: Optional[str]=None) -> List[BingImage]:        # fmt: skip

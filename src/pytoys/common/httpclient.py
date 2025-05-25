@@ -22,6 +22,14 @@ Body: {content}
 (Elapsed: {elapsed:.3f}s)
 """
 
+HttpError = requests.HTTPError
+
+
+class RequestError(Exception):
+
+    def __init__(self, reason):
+        super().__init__(f"request error: {reason}")
+
 
 class NopProgress:
     """No progress bar"""
@@ -33,6 +41,9 @@ class NopProgress:
         pass
 
     def close(self):
+        pass
+
+    def set_description(self, *args, **kwargs):
         pass
 
 
@@ -103,7 +114,10 @@ class HttpClient:
         else:
             req_url = parse.urljoin(self.base_url, url.lstrip("/"))
         logger.debug("Request: {} {}, params={}", method, req_url, kwargs.get("params", ""))
-        resp = self.session.request(method, req_url, timeout=self.timeout, **kwargs)
+        try:
+            resp = self.session.request(method, req_url, timeout=self.timeout, **kwargs)
+        except (requests.ConnectionError, requests.Timeout) as e:
+            raise RequestError(str(e)) from e
         resp.raise_for_status()
         return resp
 
@@ -139,18 +153,23 @@ def save_response(resp: requests.Response, default_filename=None, progress=False
     output_file = os.path.join(output, filename) if output else filename
     if output:
         os.makedirs(output, exist_ok=True)
-    logger.info("save file: {}", output_file)
+    if not progress:
+        logger.info("save file: {}", output_file)
 
     total = resp.headers.get("content-length")
     if total and progress:
-        progressbar = tqdm.tqdm(desc=f"Downloading {filename}", total=int(total), unit="iB")
+        progressbar = tqdm.tqdm(desc=f"📥 {filename}", total=int(total), unit="iB")
     else:
         progressbar = NopProgress()
 
-    with open(output_file, "wb") as f:
-        for chunk in resp.iter_content(chunk_size=io.DEFAULT_BUFFER_SIZE):
-            f.write(chunk)
-            progressbar.update(len(chunk))
+    try:
+        with open(output_file, "wb") as f:
+            for chunk in resp.iter_content(chunk_size=io.DEFAULT_BUFFER_SIZE):
+                f.write(chunk)
+                progressbar.update(len(chunk))
+            progressbar.set_description(f"✅ {filename}")
+    except (TimeoutError, requests.ConnectionError, requests.ConnectTimeout) as e:
+        raise RequestError(str(e)) from e
 
 
 def get_and_save(url, params=None, timeout=None, default_filename=None, output=None,

@@ -5,13 +5,13 @@ from typing import Optional
 from urllib import parse
 
 import click
-import requests
 from loguru import logger
 
-from pytoys.common import command
+from pytoys.common import command, httpclient
 from pytoys.github import proxy
 from pytoys.net import ipinfo, location, utils
 from pytoys.net import weather as weather_server
+from pytoys.openapi import bingimage
 from pytoys.pip import repos
 from pytoys.vscode import extension as vscode_extension
 
@@ -135,7 +135,7 @@ def weather(city: Optional[str] = None):
         # 使用 HefengWeatherApi 查询城市信息
         try:
             locations = api.lookup_city(query_location.district, adm=query_location.city)
-        except (requests.HTTPError, requests.Timeout, requests.ConnectionError) as e:
+        except (httpclient.RequestError, httpclient.HttpError) as e:
             logger.error("lookup city failed: {}", e)
             return 1
 
@@ -150,12 +150,42 @@ def weather(city: Optional[str] = None):
         logger.debug("lookup city {}", city)
         try:
             locations = api.lookup_city(location_name, adm=adm)
-        except (requests.HTTPError, requests.Timeout, requests.ConnectionError) as e:
+        except (httpclient.HttpError, httpclient.RequestError) as e:
             logger.error("lookup city failed: {}", e)
             return 1
 
     data = api.get_weather(locations[0])
     print(data.format())
+
+
+@cli.group()
+def bing():
+    """Bing tools"""
+
+
+@bing.command()
+@click.option("--date", help="指定年份,格式: YYYY 或 YYYY-MM-DD")
+@click.option("--timeout", type=int, default=60 * 5, help="指定timeout")
+def download_image(date: Optional[str] = None, timeout: Optional[int] = None):
+    """Get weather"""
+
+    api = bingimage.BingNpanuhinAPI()
+    try:
+        images = api.get_bing_images(date=date)
+    except (httpclient.HttpError, httpclient.RequestError) as e:
+        logger.error("get images failed: {}", e)
+        return 1
+
+    if not images:
+        raise ValueError("no images found")
+
+    logger.info("download {} image(s)", len(images))
+    for image in images:
+        logger.debug("download image: {}", image.filename())
+        try:
+            api.download_image(image, progress=True)
+        except (httpclient.HttpError, httpclient.RequestError) as e:
+            logger.error("download image {} failed: {}", image.filename(), e)
 
 
 if __name__ == "__main__":

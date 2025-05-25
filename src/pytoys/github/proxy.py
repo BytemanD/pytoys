@@ -2,7 +2,6 @@ import abc
 from typing import List
 from urllib import parse
 
-import requests
 from loguru import logger
 
 from pytoys.common import httpclient
@@ -56,8 +55,7 @@ def download(github_url, timeout=60 * 10):
                 logger.debug("download with proxy url: {}", proxy_url)
                 httpclient.get_and_save(proxy_url, timeout=timeout, progress=True)
                 return
-            except (requests.HTTPError, requests.Timeout, requests.ConnectionError,
-                    requests.ConnectTimeout) as e:                                  # fmt: skip
+            except (httpclient.HttpError, httpclient.RequestError) as e:
                 logger.warning("get with proxy {} failed, {}", proxy_url, e)
                 continue
 

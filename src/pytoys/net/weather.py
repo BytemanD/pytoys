@@ -21,6 +21,7 @@ WEATHER_TEMPLATE = """
   湿度: {humidity}
 
   {reporttime}
+  {link}
 """
 
 
@@ -30,27 +31,28 @@ class Weather:
     weather: str
     temperature: int | float
     winddirection: str
-    windpower: str
-    weather: str
     reporttime: str
+    windpower: Optional[str] = None
     # 体感温度
     feels_like: Optional[int | float] = None
     # 风速(公里/小时)
     windspeed: Optional[int] = None
     # 相对湿度，百分比数值
     humidity: Optional[int | float] = None
+    link: Optional[str] = None
 
     def format(self) -> str:
         return WEATHER_TEMPLATE.format(
             date=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             area=colored(self.location.info(), "red"),
-            reporttime=colored(f"更新时间: {self.reporttime}", "grey"),
             weather=colored(self.weather, "cyan"),
             temperature=colored(f"{self.temperature}℃", "cyan"),
             winddirection=colored(self.winddirection, "blue"),
-            windpower=colored(self.windpower, "blue"),
-            windspeed=colored(self.windspeed or "", "blue"),
-            humidity=colored(self.humidity, "yellow"),
+            windpower=colored(self.windpower or "-", "blue"),
+            windspeed=colored(self.windspeed or "-", "blue"),
+            humidity=colored(self.humidity or "-", "yellow"),
+            reporttime=colored(f"更新时间: {self.reporttime}", "grey"),
+            link=colored(f"更多信息: {self.link or '-'}", "grey"),
         )
 
 
@@ -144,4 +146,5 @@ class HefengWeatherApi(httpclient.HttpClient):
             windspeed=value.get("windSpeed"),
             humidity=value.get("humidity"),
             reporttime=data.get("updateTime"),
+            link=data.get("fxLink"),
         )

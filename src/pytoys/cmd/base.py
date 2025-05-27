@@ -11,7 +11,7 @@ from pytoys.common import command, httpclient
 from pytoys.github import proxy
 from pytoys.net import ipinfo, location, utils
 from pytoys.net import weather as weather_server
-from pytoys.openapi import bingimage
+from pytoys.openapi import bingimage, qqmap
 from pytoys.pip import repos
 from pytoys.vscode import extension as vscode_extension
 
@@ -127,34 +127,28 @@ def weather(city: Optional[str] = None):
     """Get weather"""
     api = weather_server.HefengWeatherApi()
     if not city:
-        logger.debug("get public ip")
-        public_ip = ipinfo.IPinfoAPI().get_public_ip()
-        logger.debug("get area")
-        query_location = location.IP77Api().get_location(public_ip)
-        logger.debug("lookup city {}", query_location.info())
-        # 使用 HefengWeatherApi 查询城市信息
-        try:
-            locations = api.lookup_city(query_location.district, adm=query_location.city)
-        except (httpclient.RequestError, httpclient.HttpError) as e:
-            logger.error("lookup city failed: {}", e)
-            return 1
+        qq_api = qqmap.QQMapAPIs()
+        logger.debug("get my location")
+        my_location = qq_api.get_location()
+        data = qq_api.get_weather(my_location)
+        print(data.format())
+        return
 
+    values = re.split(r",|，", city)
+    if not values:
+        raise ValueError("invalid city")
+    if len(values) == 1:
+        adm, location_name = None, values[0]
     else:
-        values = re.split(r",|，", city)
-        if not values:
-            raise ValueError("invalid city")
-        if len(values) == 1:
-            adm, location_name = None, values[0]
-        else:
-            adm, location_name = values[0], values[1]
-        logger.debug("lookup city {}", city)
-        try:
-            locations = api.lookup_city(location_name, adm=adm)
-        except (httpclient.HttpError, httpclient.RequestError) as e:
-            logger.error("lookup city failed: {}", e)
-            return 1
-
-    data = api.get_weather(locations[0])
+        adm, location_name = values[0], values[1]
+    logger.debug("lookup city {}", city)
+    try:
+        locations = api.lookup_city(location_name, adm=adm)
+    except (httpclient.HttpError, httpclient.RequestError) as e:
+        logger.error("lookup city failed: {}", e)
+        return 1
+    my_location = locations[0]
+    data = api.get_weather(my_location)
     print(data.format())
 
 

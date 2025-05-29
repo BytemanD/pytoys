@@ -1,0 +1,6 @@
+- url: https://www.example.com
+  method: GET
+- url: https://www.baidu.com
+  method: GET
+- url: https://www.baidu.com
+  method: POST

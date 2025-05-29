@@ -1,3 +1,4 @@
+import functools
 import re
 import subprocess
 import sys
@@ -5,7 +6,10 @@ from typing import Optional
 from urllib import parse
 
 import click
+import requests
+import yaml
 from loguru import logger
+from termcolor import colored, cprint
 
 from pytoys.common import command, httpclient
 from pytoys.github import proxy
@@ -180,6 +184,59 @@ def download_image(date: Optional[str] = None, timeout: Optional[int] = None):
             api.download_image(image, progress=True)
         except (httpclient.HttpError, httpclient.RequestError) as e:
             logger.error("download image {} failed: {}", image.filename(), e)
+
+
+@cli.command()
+@click.option("-T", "--timeout", type=int, help="Timeout")
+@click.option("-F", "--file", help="文件")
+@click.option("-M", "--method", help="HTTP method, default: GET", default="GET")
+@click.option("-P", "--params", help="HTTP params, e.g. 'key1=value1&key2=value2'")
+@click.option("-H", '--header', multiple=True, type=custome_types.TYPE_HEADER,
+              help="HTTP headers e.g. 'content-type=application/json")              # fmt: skip
+@click.argument("url", required=False, default=None)
+def curl(url: str, params: Optional[str] = None, method: str = "GET",
+         header: Optional[dict] = None, file: Optional[str] = None,
+         timeout: Optional[int] = None):                                            # fmt: skip
+    """curl command"""
+
+    if url and file:
+        logger.error("argument url and option --input confict")
+        return 1
+
+    if file:
+        with open(file, "r", encoding="utf-8") as f:
+            data = yaml.safe_load(f)
+        reqs = [httpclient.Request.load_from_dict(req) for req in data or []]
+    else:
+        reqs = [
+            httpclient.Request(url=url, method=method, params=parse.parse_qs(params or ""),
+                               headers=functools.reduce(lambda x, y: x | y, header or [], {}),
+                               timeout=timeout)                                         # fmt: skip
+        ]
+
+    for req in reqs:
+        cprint(f"> {req.method} {req.url}", "cyan")
+        try:
+            resp = httpclient.request(req)
+        except requests.exceptions.InvalidSchema:
+            cprint("ERROR: invalid url", "red")
+            continue
+        except (requests.exceptions.SSLError, requests.Timeout, requests.ConnectionError) as e:
+            cprint(f"ERROR: request faield: {e}", "red")
+            continue
+
+        print(colored(f"{resp.status_code} {resp.reason}",
+                      "red" if 400 <= resp.status_code < 600 else "green"),
+              colored(f"(Elapsed: {resp.elapsed.total_seconds()}s)", "grey"))       # fmt: skip
+        print()
+
+        for k, v in resp.headers.items():
+            print(colored(k, "blue"), ":", v)
+        print()
+
+        cprint("Body:", "blue")
+        print(resp.content.decode() if resp.content else "")
+        print()
 
 
 if __name__ == "__main__":

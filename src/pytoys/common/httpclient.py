@@ -1,3 +1,4 @@
+import dataclasses
 import io
 import os
 import re
@@ -47,16 +48,16 @@ class NopProgress:
         pass
 
 
-def _parse_request_to_curl(request: requests.PreparedRequest) -> str:
-    cmd = ["curl", f"-X{request.method}", f"'{request.url}'"]
-    for k, v in request.headers.items():
+def _parse_request_to_curl(req: requests.PreparedRequest) -> str:
+    cmd = ["curl", f"-X{req.method}", f"'{req.url}'"]
+    for k, v in req.headers.items():
         cmd.append(f"-H '{k}: {v}'")
-    req_type = request.headers.get("content-type")
-    if req_type in ["application/json", "text/html"] and isinstance(request.body, bytes):
-        cmd.append(f"-d '{request.body.decode()}'")
-    elif isinstance(request.body, str):
-        cmd.append(f"-d '{request.body}'")
-    elif request.body:
+    req_type = req.headers.get("content-type")
+    if req_type in ["application/json", "text/html"] and isinstance(req.body, bytes):
+        cmd.append(f"-d '{req.body.decode()}'")
+    elif isinstance(req.body, str):
+        cmd.append(f"-d '{req.body}'")
+    elif req.body:
         cmd.append(f"-d <type: {req_type}>")
     return " ".join(cmd)
 
@@ -177,3 +178,37 @@ def get_and_save(url, params=None, timeout=None, default_filename=None, output=N
     """Download file from url"""
     resp = requests.get(url, params=params, timeout=timeout, stream=True)
     save_response(resp, default_filename=default_filename, progress=progress, output=output)
+
+
+@dataclasses.dataclass
+class Request:
+    url: str
+    method: str = "GET"
+    params: Optional[dict] = None
+    headers: Optional[dict] = None
+    json: Optional[dict] = None
+    data: Optional[str] = None
+    timeout: Optional[int] = None
+
+    @classmethod
+    def load_from_dict(cls, req: dict):
+        if not req.get("url"):
+            raise ValueError("url is required")
+        return cls(url=req.get("url", ""),
+                   method=req.get("method", "GET"),
+                   params=req.get("params", {}),
+                   json=req.get("json", {}),
+                   headers=req.get("headrs", {}),
+                   timeout=req.get("timeout"))                  # fmt: skip
+
+
+def request(req: Request) -> requests.Response:
+    return requests.request(
+        req.method.upper(),
+        req.url,
+        params=req.params or {},
+        headers=req.headers or {},
+        json=req.json or {},
+        data=req.data or None,
+        timeout=60 * 5,
+    )

@@ -43,5 +43,16 @@ class AreaType(click.ParamType):
         return ""
 
 
+class HeaderType(click.ParamType):
+    name = "header"
+
+    def convert(self, value, param, ctx) -> dict:
+        values = value.split("=", 1)
+        if len(values) < 2:
+            self.fail(f"{value} is not a valid header", param, ctx)
+        return {values[0].strip(): ":".join(values[1:]).strip()}
+
+
 TYPE_IPV4 = IPv4Type()
 TYPE_AREA = AreaType()
+TYPE_HEADER = HeaderType()

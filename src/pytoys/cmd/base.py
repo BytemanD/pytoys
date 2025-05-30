@@ -4,6 +4,7 @@ import subprocess
 import sys
 from typing import Optional
 from urllib import parse
+from concurrent import futures
 
 import click
 import requests
@@ -162,28 +163,36 @@ def bing():
 
 
 @bing.command()
+@click.option("--no-progress", is_flag=True, help="No progress")
 @click.option("--date", help="指定年份,格式: YYYY 或 YYYY-MM-DD")
 @click.option("--timeout", type=int, default=60 * 5, help="指定timeout")
-def download_image(date: Optional[str] = None, timeout: Optional[int] = None):
+def download_image(date: Optional[str] = None, timeout: Optional[int] = None,
+                   no_progress: bool=False):                                    # fmt: skip
     """Get weather"""
 
     api = bingimage.BingNpanuhinAPI(timeout=timeout)
+    logger.info("get images")
     try:
         images = api.get_bing_images(date=date)
     except (httpclient.HttpError, httpclient.RequestError) as e:
         logger.error("get images failed: {}", e)
         return 1
     if not images:
-        logger.error("no images found")
+        logger.warning("no images found")
         return 1
 
-    logger.info("download {} image(s)", len(images))
-    for image in images:
+    def _download(image: bingimage.BingImage):
         logger.debug("download image: {}", image.filename())
         try:
-            api.download_image(image, progress=True)
+            api.download_image(image, progress=not no_progress)
         except (httpclient.HttpError, httpclient.RequestError) as e:
-            logger.error("download image {} failed: {}", image.filename(), e)
+            logger.error("download image {} failed: {}",
+                         image.filename(), e)
+
+    logger.info("download {} image(s)", len(images))
+    with futures.ThreadPoolExecutor() as executor:
+        executor.map(_download, images)
+    logger.info("download completed")
 
 
 @cli.command()

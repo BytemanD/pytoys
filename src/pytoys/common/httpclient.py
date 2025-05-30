@@ -6,8 +6,8 @@ from typing import Optional
 from urllib import parse
 
 import requests
-import tqdm
 from loguru import logger
+from tqdm.auto import tqdm
 
 TYPE_WWW_FORM = "application/x-www-form-urlencoded"
 TYPE_JSON = "application/json"
@@ -42,6 +42,9 @@ class NopProgress:
         pass
 
     def close(self):
+        pass
+
+    def clear(self):
         pass
 
     def set_description(self, *args, **kwargs):
@@ -155,13 +158,11 @@ def save_response(resp: requests.Response, default_filename=None, progress=False
     if output:
         os.makedirs(output, exist_ok=True)
     if not progress:
-        logger.info("save file: {}", output_file)
+        logger.info("saving to file: {}", output_file)
 
     total = resp.headers.get("content-length")
-    if total and progress:
-        progressbar = tqdm.tqdm(desc=f"📥 {filename}", total=int(total), unit="iB")
-    else:
-        progressbar = NopProgress()
+    progressbar = tqdm(desc=f"📥 {filename}", total=int(total or 0), unit_scale=True,
+                       leave=False, disable=not total or not progress)                  # fmt: skip
 
     try:
         with open(output_file, "wb") as f:
@@ -169,6 +170,12 @@ def save_response(resp: requests.Response, default_filename=None, progress=False
                 f.write(chunk)
                 progressbar.update(len(chunk))
             progressbar.set_description(f"✅ {filename}")
+            progressbar.clear()
+            progressbar.close()
+        if not progress:
+            logger.info("saved to file: {}", output_file)
+
+
     except (TimeoutError, requests.ConnectionError, requests.ConnectTimeout) as e:
         raise RequestError(str(e)) from e
 

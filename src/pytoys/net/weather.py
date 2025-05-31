@@ -51,8 +51,8 @@ class Weather:
             windpower=colored(self.windpower or "-", "blue"),
             windspeed=colored(self.windspeed or "-", "blue"),
             humidity=colored(self.humidity or "-", "yellow"),
-            reporttime=colored(f"更新时间: {self.reporttime}", "grey"),
-            link=colored(f"更多信息: {self.link or '-'}", "grey"),
+            reporttime=colored(f"更新时间: {self.reporttime}", "dark_grey"),
+            link=colored(f"更多信息: {self.link or '-'}", "dark_grey"),
         )
 
 

@@ -120,7 +120,7 @@ def info(detail=False, ip=None):
             for k, v in local_info.items():
                 if not v:
                     continue
-                click.echo(f"{k:15}:", v)
+                click.echo(f"{k:15}: {v}")
     except IOError as e:
         logger.error("get local info failed: {}", e)
         return 1

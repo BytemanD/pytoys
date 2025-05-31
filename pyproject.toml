@@ -1,6 +1,6 @@
 [project]
 name = "pytoys"
-version = "0.1.0"
+version = "0.1.1"
 description = "Python toys for fun and learning"
 authors = [
     {name = "BytemanD", email = "byteman.d@outlook.com"},
@@ -21,7 +21,7 @@ dependencies = [
 ]
 requires-python = ">=3.10"
 readme = "README.md"
-license = {text = "MIT"}
+license-files = ["LICEN[CS]E*"]
 
 [dependency-groups]
 dev = [
@@ -52,3 +52,10 @@ output-format = "colorized"
 [tool.pylint.format]
 # 强制使用 LF 换行符（Unix 风格）
 expected-line-ending-format = "LF"
+
+[tool.uv.sources]
+torch = { index = "tsinghua" }
+
+[[tool.uv.index]]
+name = "tsinghua"
+url = "https://pypi.tuna.tsinghua.edu.cn/simple"

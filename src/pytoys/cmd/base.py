@@ -254,13 +254,16 @@ def crawler():
 
 
 @crawler.command()
-@click.option("--year", help="指定年份,格式: YYYY 或 YYYY")
-@click.option("-n", "--num", type=int, default=1, help="指定查询总页数")
-def oneloume(year: Optional[str] = None, num: Optional[int] = None):
+@click.option("--max-page", type=int, default=1, help="指定最多查询页数")
+@click.option("--min-items", type=int, help="最少匹配条数")
+@click.option("--name", help="指定视频名称")
+@click.option('-y', "--year", help="指定年份,格式: YYYY 或 YYYY")
+def oneloume(year: Optional[str] = None, max_page: Optional[int] = None, name: Optional[str] = None,
+             min_items: Optional[int]=None):
     """https://www.1lou.me 爬虫工具"""
 
     web = Web1louMe()
-    vides = web.walk(page_nums=num, year=year)
+    vides = web.walk(max_page=max_page, year=year, name=name, min_items=min_items)
     dt = table.DataTable(["source", "year", "location", "size", "name", "href"], index=True)
     dt.set_style(table.TableStyle.SINGLE_BORDER)
     dt.set_align({"source": "l", "name": "l", "size": "r", "href": "l", "location": "l"})

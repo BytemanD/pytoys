@@ -1,6 +1,6 @@
 import dataclasses
 import re
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 from urllib import parse
 
 import bs4
@@ -47,9 +47,8 @@ class Web1louMe:
         resp = self.client.get(url)
         return bs4.BeautifulSoup(resp.text, "html.parser")
 
-    def _find_all_video(self, dom: bs4.BeautifulSoup,
-                        exclude_source=None,
-                        year=None) -> Tuple[List[Media], str]:   # fmt: skip
+    def _find_all_video(self, dom: bs4.BeautifulSoup, exclude_source=None, year:str='',
+                        name:str ="") -> Tuple[List[Media], str]:                       # fmt: skip
         """get all videos and next page"""
         li_list = dom.find_all("li")
         videos = []
@@ -60,7 +59,6 @@ class Web1louMe:
                 continue
             if len(a_list) < 6:
                 continue
-            # import pdb; pdb.set_trace()
             video_src = a_list[0].get_text().strip()
             video_name = a_list[-1].get_text().strip()
             viddo_href = a_list[5].get("href").strip()
@@ -72,6 +70,8 @@ class Web1louMe:
             ):
                 continue
             if year and video_year != year:
+                continue
+            if name and name not in video_name:
                 continue
             videos.append(
                 Media(
@@ -90,14 +90,16 @@ class Web1louMe:
         a_pages = dom.find_all("a", attrs={"page-link"})
         return a_pages[-1].get("href")
 
-    def walk(self, page_nums: int = 1, year: str = ""):
+    def walk(self, max_page: int = 1, year: str = "", name: str="",
+             min_items: Optional[int] = None):                                          # fmt: skip
         total_videos, url = [], "/"
-        for _ in range(page_nums):
+        for _ in range(max_page):
             logger.info("查询页面: {}", url)
             dom = self._get_dom(url)
-            videos, url = self._find_all_video(
-                dom, exclude_source=["夸克", "图书", "学习"], year=year
-            )
+            videos, url = self._find_all_video(dom, exclude_source=["夸克", "图书", "学习"],
+                                               year=year, name=name)                    # fmt: skip
             logger.info("找到 {} 个视频", len(videos))
             total_videos.extend(videos)
+            if min_items and len(total_videos) >= min_items:
+                break
         return total_videos

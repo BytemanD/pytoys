@@ -158,43 +158,6 @@ def weather(city: Optional[str] = None):
     print(data.format())
 
 
-@cli.group()
-def bing():
-    """Bing tools"""
-
-
-@bing.command()
-@click.option("--no-progress", is_flag=True, help="No progress")
-@click.option("--date", help="指定年份,格式: YYYY 或 YYYY-MM-DD")
-@click.option("--timeout", type=int, default=60 * 5, help="指定timeout")
-def download_image(date: Optional[str] = None, timeout: Optional[int] = None,
-                   no_progress: bool=False):                                    # fmt: skip
-    """Get weather"""
-
-    api = bingimage.BingNpanuhinAPI(timeout=timeout)
-    logger.info("get images")
-    try:
-        images = api.get_bing_images(date=date)
-    except (httpclient.HttpError, httpclient.RequestError) as e:
-        logger.error("get images failed: {}", e)
-        return 1
-    if not images:
-        logger.warning("no images found")
-        return 1
-
-    def _download(image: bingimage.BingImage):
-        logger.debug("download image: {}", image.filename())
-        try:
-            api.download_image(image, progress=not no_progress)
-        except (httpclient.HttpError, httpclient.RequestError) as e:
-            logger.error("download image {} failed: {}", image.filename(), e)
-
-    logger.info("download {} image(s)", len(images))
-    with futures.ThreadPoolExecutor() as executor:
-        executor.map(_download, images)
-    logger.info("download completed")
-
-
 @cli.command()
 @click.option("-T", "--timeout", type=int, help="Timeout")
 @click.option("-F", "--file", help="文件")
@@ -254,10 +217,42 @@ def crawler():
 
 
 @crawler.command()
+@click.option("--no-progress", is_flag=True, help="No progress")
+@click.option("--date", help="指定年份,格式: YYYY 或 YYYY-MM-DD")
+@click.option("--timeout", type=int, default=60 * 5, help="指定timeout")
+def bing_image(date: Optional[str] = None, timeout: Optional[int] = None,
+                   no_progress: bool=False):                                    # fmt: skip
+    """爬取 https://bing.npanuhin.me/ 壁纸"""
+
+    api = bingimage.BingNpanuhinAPI(timeout=timeout)
+    logger.info("get images")
+    try:
+        images = api.get_bing_images(date=date)
+    except (httpclient.HttpError, httpclient.RequestError) as e:
+        logger.error("get images failed: {}", e)
+        return 1
+    if not images:
+        logger.warning("no images found")
+        return 1
+
+    def _download(image: bingimage.BingImage):
+        logger.debug("download image: {}", image.filename())
+        try:
+            api.download_image(image, progress=not no_progress)
+        except (httpclient.HttpError, httpclient.RequestError) as e:
+            logger.error("download image {} failed: {}", image.filename(), e)
+
+    logger.info("download {} image(s)", len(images))
+    with futures.ThreadPoolExecutor() as executor:
+        executor.map(_download, images)
+    logger.info("download completed")
+
+
+@crawler.command()
 @click.option("--max-page", type=int, default=1, help="指定最多查询页数")
 @click.option("--min-items", type=int, help="最少匹配条数")
 @click.option("--name", help="指定视频名称")
-@click.option("-y", "--year", help="指定年份,格式: YYYY")
+@click.option("-y", "--year", help="指定年份,格式: 'YYYY' 或 '更早'")
 @click.option("-s", "--score", is_flag=True, help="查询评分")
 def oneloume(
     year: Optional[str] = None,
@@ -266,7 +261,7 @@ def oneloume(
     min_items: Optional[int] = None,
     score=False,
 ):
-    """https://www.1lou.me 爬虫工具"""
+    """爬取 https://www.1lou.me 视频信息"""
 
     web = Web1louMe()
     videos = web.walk(max_page=max_page, year=year, name=name, min_items=min_items, score=score)

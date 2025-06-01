@@ -2,9 +2,9 @@ import functools
 import re
 import subprocess
 import sys
+from concurrent import futures
 from typing import Optional
 from urllib import parse
-from concurrent import futures
 
 import click
 import requests
@@ -12,7 +12,8 @@ import yaml
 from loguru import logger
 from termcolor import colored, cprint
 
-from pytoys.common import command, httpclient
+from pytoys.common import command, httpclient, table
+from pytoys.crawler.oneloume import Web1louMe
 from pytoys.github import proxy
 from pytoys.net import ipinfo, location, utils
 from pytoys.net import weather as weather_server
@@ -186,8 +187,7 @@ def download_image(date: Optional[str] = None, timeout: Optional[int] = None,
         try:
             api.download_image(image, progress=not no_progress)
         except (httpclient.HttpError, httpclient.RequestError) as e:
-            logger.error("download image {} failed: {}",
-                         image.filename(), e)
+            logger.error("download image {} failed: {}", image.filename(), e)
 
     logger.info("download {} image(s)", len(images))
     with futures.ThreadPoolExecutor() as executor:
@@ -246,6 +246,27 @@ def curl(url: str, params: Optional[str] = None, method: str = "GET",
         cprint("Body:", "blue")
         print(resp.content.decode() if resp.content else "")
         print()
+
+
+@cli.group()
+def crawler():
+    """crawler tools"""
+
+
+@crawler.command()
+@click.option("--year", help="指定年份,格式: YYYY 或 YYYY")
+@click.option("-n", "--num", type=int, default=1, help="指定查询总页数")
+def oneloume(year: Optional[str] = None, num: Optional[int] = None):
+    """https://www.1lou.me 爬虫工具"""
+
+    web = Web1louMe()
+    vides = web.walk(page_nums=num, year=year)
+    dt = table.DataTable(["source", "year", "location", "size", "name", "href"], index=True)
+    dt.set_style(table.TableStyle.SINGLE_BORDER)
+    dt.set_align({"source": "l", "name": "l", "size": "r", "href": "l", "location": "l"})
+
+    dt.add_object_items(vides)
+    print(dt)
 
 
 if __name__ == "__main__":

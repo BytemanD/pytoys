@@ -175,7 +175,6 @@ def save_response(resp: requests.Response, default_filename=None, progress=False
         if not progress:
             logger.info("saved to file: {}", output_file)
 
-
     except (TimeoutError, requests.ConnectionError, requests.ConnectTimeout) as e:
         raise RequestError(str(e)) from e
 

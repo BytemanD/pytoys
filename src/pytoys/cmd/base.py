@@ -257,19 +257,32 @@ def crawler():
 @click.option("--max-page", type=int, default=1, help="指定最多查询页数")
 @click.option("--min-items", type=int, help="最少匹配条数")
 @click.option("--name", help="指定视频名称")
-@click.option('-y', "--year", help="指定年份,格式: YYYY 或 YYYY")
-def oneloume(year: Optional[str] = None, max_page: Optional[int] = None, name: Optional[str] = None,
-             min_items: Optional[int]=None):
+@click.option("-y", "--year", help="指定年份,格式: YYYY")
+@click.option("-s", "--score", is_flag=True, help="查询评分")
+def oneloume(
+    year: Optional[str] = None,
+    max_page: Optional[int] = None,
+    name: Optional[str] = None,
+    min_items: Optional[int] = None,
+    score=False,
+):
     """https://www.1lou.me 爬虫工具"""
 
     web = Web1louMe()
-    vides = web.walk(max_page=max_page, year=year, name=name, min_items=min_items)
-    dt = table.DataTable(["source", "year", "location", "size", "name", "href"], index=True)
+    videos = web.walk(max_page=max_page, year=year, name=name, min_items=min_items, score=score)
+    fields = ["year", "location", "type", "size", "name", "url"]
+    fields.extend(["score_imdb", "score_douban"] if score else [])
+    dt = table.DataTable(fields, title={"score_imdb": "IMDB", "score_douban": "豆瓣"}, index=True)
     dt.set_style(table.TableStyle.SINGLE_BORDER)
-    dt.set_align({"source": "l", "name": "l", "size": "r", "href": "l", "location": "l"})
+    dt.set_align({"source": "l", "name": "l", "size": "r", "url": "l", "location": "l"})
 
-    dt.add_object_items(vides)
-    print(dt)
+    dt.add_object_items(videos)
+    logger.info("共找到 {} 个 视频 ...", dt.length())
+
+    # 分页打印
+    for page in dt.pages():
+        print(page)
+    dt.reset_page()
 
 
 if __name__ == "__main__":

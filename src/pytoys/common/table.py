@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Generator, List, Optional
 
 import prettytable
 
@@ -39,3 +39,15 @@ class DataTable(prettytable.PrettyTable):
 
     def set_align(self, kwargs):
         self.align.update(kwargs)
+
+    def length(self):
+        return len(self.rows)
+
+    def pages(self, page_size=50) -> Generator[prettytable.PrettyTable]:
+        for start in range(0, len(self.rows), page_size):
+            self.start = start
+            self.end = start + page_size
+            yield self
+
+    def reset_page(self):
+        self.start, self.end = 0, len(self.rows)

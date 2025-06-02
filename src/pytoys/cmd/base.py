@@ -249,22 +249,24 @@ def bing_image(date: Optional[str] = None, timeout: Optional[int] = None,
 
 
 @crawler.command()
+@click.option("-e", "--exclude", multiple=True, help="按关键字排除")  # fmt: skip
 @click.option("--max-page", type=int, default=1, help="指定最多查询页数")
 @click.option("--min-items", type=int, help="最少匹配条数")
-@click.option("--name", help="指定视频名称")
 @click.option("-y", "--year", help="指定年份,格式: 'YYYY' 或 '更早'")
 @click.option("-s", "--score", is_flag=True, help="查询评分")
-def oneloume(
-    year: Optional[str] = None,
-    max_page: Optional[int] = None,
-    name: Optional[str] = None,
-    min_items: Optional[int] = None,
-    score=False,
-):
-    """爬取 https://www.1lou.me 视频信息"""
+@click.argument("name", required=False)
+def oneloume(year: Optional[str] = None, max_page: Optional[int] = None, name: Optional[str] = None,
+             min_items: Optional[int] = None, score=False, exclude = None):   # fmt: skip
+    """爬取 https://www.1lou.me 视频信息
+
+    NAME: 指定名称
+    """
 
     web = Web1louMe()
-    videos = web.walk(max_page=max_page, year=year, name=name, min_items=min_items, score=score)
+    videos = web.walk(max_page=max_page, year=year, name=name, min_items=min_items, score=score,
+                      exclude_keywords=["夸克", "图书", "学习", '无字片源', "音乐"] + \
+                          list(exclude or []),
+                      progress=True)    # fmt: skip
     fields = ["year", "location", "type", "size", "name", "url"]
     fields.extend(["score_imdb", "score_douban"] if score else [])
     dt = table.DataTable(fields, title={"score_imdb": "IMDB", "score_douban": "豆瓣"}, index=True)
@@ -272,7 +274,6 @@ def oneloume(
     dt.set_align({"source": "l", "name": "l", "size": "r", "url": "l", "location": "l"})
 
     dt.add_object_items(videos)
-    logger.info("共找到 {} 个 视频 ...", dt.length())
 
     # 分页打印
     for page in dt.pages():

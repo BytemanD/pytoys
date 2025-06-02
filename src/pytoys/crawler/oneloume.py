@@ -5,7 +5,9 @@ from typing import List, Optional, Tuple
 from urllib import parse
 
 import bs4
+import requests
 from loguru import logger
+from tqdm.auto import tqdm
 
 from pytoys.common import httpclient
 
@@ -54,10 +56,13 @@ class Web1louMe:
             video_src = a_list[0].get_text().strip()
             video_year = a_list[1].get_text().strip()
             video_name = a_list[-1].get_text().strip()
+            video_type = a_list[3].get_text().strip()
             if "音乐" in video_src:
                 continue
             if exclude_keywords and any(
-                iter([s in video_src or s in video_name for s in exclude_keywords])
+                iter(
+                    [s in video_src or s in video_name or s in video_type for s in exclude_keywords]
+                )
             ):
                 continue
             if year and video_year != year:
@@ -87,35 +92,43 @@ class Web1louMe:
         return a_pages[-1].get("href")
 
     def _get_score(self, media: Media) -> Tuple[str, str]:
-        dom_txt = self._get_dom(media.href).text
+        try:
+            dom_txt = self._get_dom(media.url).text
+        except (requests.Timeout, requests.ConnectionError, requests.HTTPError):
+            logger.exception("获取评分失败(url={})", media.url)
+            return ("-", "-")
+
         score_imdb, score_douban = "", ""
         matched = re.findall(r"IMDb评分.{0,1}([0-9./]+)", dom_txt)
-        if matched:
-            score_imdb = matched[0]
+        score_imdb = matched[0] if matched else "-"
         matched = re.findall(r"豆瓣评分.{0,1}([0-9./]+)", dom_txt)
-        if matched:
-            score_douban = matched[0]
+        score_douban = matched[0] if matched else "-"
         logger.debug("media {} score: imdb={}, douban={}", media.name, 0, 0)
-        return (score_imdb, score_douban)
+        return (score_imdb or "-", score_douban or "-")
 
     def walk(self, max_page: int = 1, year: str = "", name: str="", min_items: Optional[int] = None,
-             score=False):                                          # fmt: skip
+             score=False, progress=False, exclude_keywords=None): # fmt: skip
         total_videos, url = [], "/"
         for _ in range(max_page):
             logger.info("查询页面: {}", url)
             videos, url = self._find_all_video(
-                self._get_dom(url), exclude_keywords=["夸克", "图书", "学习", '无字片源'],
+                self._get_dom(url), exclude_keywords=exclude_keywords or [],
                 year=year, name=name)                                                   # fmt: skip
             logger.info("找到 {} 个视频", len(videos))
             total_videos.extend(videos)
             if min_items and len(total_videos) >= min_items:
                 break
+        logger.info("共找到 {} 个 视频 ...", len(total_videos))
         if score:
-            logger.info("查询评分 ({}) ...", len(videos))
+            logger.info("查询评分 ({}) ...", len(total_videos))
 
             def _update_score(media: Media):
                 media.score_imdb, media.score_douban = self._get_score(media)
 
             with futures.ThreadPoolExecutor() as execotor:
-                execotor.map(_update_score, videos)
+                results = execotor.map(_update_score, total_videos)
+                with tqdm(total=len(total_videos), desc="查询进度", disable=not progress) as pbr:
+                    for _ in results:
+                        pbr.update(1)
+
         return total_videos

@@ -43,7 +43,7 @@ class DataTable(prettytable.PrettyTable):
     def length(self):
         return len(self.rows)
 
-    def pages(self, page_size=50) -> Generator[prettytable.PrettyTable]:
+    def pages(self, page_size=50) -> Generator[prettytable.PrettyTable, None, None]:
         for start in range(0, len(self.rows), page_size):
             self.start = start
             self.end = start + page_size

@@ -42,7 +42,7 @@ class Web1louMe:
         return bs4.BeautifulSoup(resp.text, "html.parser")
 
     def _find_all_video(self, dom: bs4.BeautifulSoup, exclude_keywords=None, year:str='',
-                        name:str ="") -> Tuple[List[Media], str]:                       # fmt: skip
+                        name:str="", type:str="") -> Tuple[List[Media], str]:        # fmt: skip
         """get all videos and next page"""
         li_list = dom.find_all("li")
         videos, video_names = [], []
@@ -68,7 +68,8 @@ class Web1louMe:
             if year and video_year != year:
                 continue
             # 匹配名称，忽略重复
-            if (name and name not in video_name) or (video_name in video_names):
+            if (name and name not in video_name) or (video_name in video_names) or \
+               (type and video_type != type):
                 continue
             # 去除 name 内容部分内容
             for s in ["[BT下载]"]:
@@ -88,8 +89,10 @@ class Web1louMe:
         return (sorted(videos, key=lambda x: x.year), self._get_last_page_href(dom))
 
     def _get_last_page_href(self, dom: bs4.BeautifulSoup) -> str:
-        a_pages = dom.find_all("a", attrs={"page-link"})
-        return a_pages[-1].get("href")
+        a_pages = dom.find_all("a", attrs={"class": "page-link"})
+        if not a_pages:
+            return ""
+        return a_pages[-1].get("href", "")
 
     def _get_score(self, media: Media) -> Tuple[str, str]:
         try:
@@ -106,14 +109,15 @@ class Web1louMe:
         logger.debug("media {} score: imdb={}, douban={}", media.name, 0, 0)
         return (score_imdb or "-", score_douban or "-")
 
-    def walk(self, max_page: int = 1, year: str = "", name: str="", min_items: Optional[int] = None,
-             score=False, progress=False, exclude_keywords=None): # fmt: skip
+    def walk(self, max_page: int = 1, year: str = "", type: str="", name: str="",
+             min_items: int=0, score=False, progress=False,
+             exclude_keywords=None): # fmt: skip
         total_videos, url = [], "/"
         for _ in range(max_page):
             logger.info("查询页面: {}", url)
             videos, url = self._find_all_video(
                 self._get_dom(url), exclude_keywords=exclude_keywords or [],
-                year=year, name=name)                                                   # fmt: skip
+                year=year, name=name, type=type)                                # fmt: skip
             logger.info("找到 {} 个视频", len(videos))
             total_videos.extend(videos)
             if min_items and len(total_videos) >= min_items:

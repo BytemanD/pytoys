@@ -2,5 +2,3 @@
   method: GET
 - url: https://www.baidu.com
   method: GET
-- url: https://www.baidu.com
-  method: POST

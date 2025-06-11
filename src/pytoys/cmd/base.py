@@ -5,6 +5,8 @@ import sys
 from concurrent import futures
 from typing import Optional
 from urllib import parse
+import pathlib
+from urllib import parse
 
 import click
 import requests
@@ -21,7 +23,7 @@ from pytoys.openapi import bingimage, qqmap
 from pytoys.pip import repos
 from pytoys.vscode import extension as vscode_extension
 
-from . import cli, custome_types
+from . import cli, custome_types, click_command_with_help
 
 
 @cli.group()
@@ -158,36 +160,44 @@ def weather(city: Optional[str] = None):
     print(data.format())
 
 
-@cli.command()
+@click_command_with_help
 @click.option("-T", "--timeout", type=int, help="Timeout")
-@click.option("-F", "--file", help="文件")
 @click.option("-M", "--method", help="HTTP method, default: GET", default="GET")
 @click.option("-P", "--params", help="HTTP params, e.g. 'key1=value1&key2=value2'")
 @click.option("-H", '--header', multiple=True, type=custome_types.TYPE_HEADER,
               help="HTTP headers e.g. 'content-type=application/json")              # fmt: skip
-@click.argument("url", required=False, default=None)
+@click.argument("url", default=None)
 def curl(url: str, params: Optional[str] = None, method: str = "GET",
-         header: Optional[dict] = None, file: Optional[str] = None,
-         timeout: Optional[int] = None):                                            # fmt: skip
-    """curl command"""
+         header: Optional[dict] = None, timeout: Optional[int] = None):                 # fmt: skip
+    """curl command
 
-    if url and file:
-        logger.error("argument url and option --input confict")
-        return 1
-
-    if file:
+    \b
+    Argument:
+        URl: 请求URL或yaml文件
+    Example:
+        curl http://www.example.com
+        curl @requets.yaml
+    """
+    if url.startswith('@'):
+        file = url.lstrip('@')
+        if not pathlib.Path(file).is_file():
+            raise click.UsageError(f'file "{file}" not exists')
         with open(file, "r", encoding="utf-8") as f:
             data = yaml.safe_load(f)
         reqs = [httpclient.Request.load_from_dict(req) for req in data or []]
     else:
-        reqs = [
-            httpclient.Request(url=url, method=method, params=parse.parse_qs(params or ""),
-                               headers=functools.reduce(lambda x, y: x | y, header or [], {}),
-                               timeout=timeout)                                         # fmt: skip
-        ]
+        if not url.startswith('http://') or not url.startswith('https://'):
+            raise click.UsageError(
+                f'url "{url}" invalid (use http(s)://{url}), or do you want a file? (use @{url}))')
 
+        reqs = [
+            httpclient.Request(
+                url=url, method=method, params=parse.parse_qs(params or ""),
+                headers=functools.reduce(lambda x, y: x | y, header or [], {}),
+                timeout=timeout)                                         # fmt: skip
+        ]
     for req in reqs:
-        cprint(f"> {req.method} {req.url}", "cyan")
+        cprint(f"========== {req.method} {req.url} ==========", "cyan")
         try:
             resp = httpclient.request(req)
         except requests.exceptions.InvalidSchema:
@@ -198,8 +208,7 @@ def curl(url: str, params: Optional[str] = None, method: str = "GET",
             continue
 
         print(colored(f"{resp.status_code} {resp.reason}",
-                      "red" if 400 <= resp.status_code < 600 else "green"),
-              colored(f"(Elapsed: {resp.elapsed.total_seconds()}s)", "grey"))       # fmt: skip
+                      "red" if 400 <= resp.status_code < 600 else "green"))       # fmt: skip
         print()
 
         for k, v in resp.headers.items():
@@ -208,8 +217,8 @@ def curl(url: str, params: Optional[str] = None, method: str = "GET",
 
         cprint("Body:", "blue")
         print(resp.content.decode() if resp.content else "")
-        print()
-
+        # print()
+        print(colored(f"Elapsed: {resp.elapsed.total_seconds()}s)", "grey"))
 
 @cli.group()
 def crawler():
@@ -249,24 +258,31 @@ def bing_image(date: Optional[str] = None, timeout: Optional[int] = None,
 
 
 @crawler.command()
-@click.option("-e", "--exclude", multiple=True, help="按关键字排除")  # fmt: skip
+@click.option("-e", "--exclude", multiple=True, help="按关键字排除")
 @click.option("--max-page", type=int, default=1, help="指定最多查询页数")
 @click.option("--min-items", type=int, help="最少匹配条数")
+@click.option("-t", "--type", multiple=True, help="指定类型")
 @click.option("-y", "--year", help="指定年份,格式: 'YYYY' 或 '更早'")
 @click.option("-s", "--score", is_flag=True, help="查询评分")
 @click.argument("name", required=False)
 def oneloume(year: Optional[str] = None, max_page: Optional[int] = None, name: Optional[str] = None,
-             min_items: Optional[int] = None, score=False, exclude = None):   # fmt: skip
+             min_items: Optional[int] = None, type: Optional[str]=None,
+             score=False, exclude = None):   # fmt: skip
     """爬取 https://www.1lou.me 视频信息
 
     NAME: 指定名称
     """
 
     web = Web1louMe()
-    videos = web.walk(max_page=max_page, year=year, name=name, min_items=min_items, score=score,
-                      exclude_keywords=["夸克", "图书", "学习", '无字片源', "音乐"] + \
-                          list(exclude or []),
-                      progress=True)    # fmt: skip
+    try:
+        videos = web.walk(max_page=max_page, year=year, name=name, min_items=min_items, score=score,
+                         type=type,
+                         exclude_keywords=["夸克", "图书", "学习", '无字片源', "音乐"] + \
+                             list(exclude or []),
+                        progress=True)    # fmt: skip
+    except httpclient.RequestError as e:
+        logger.error("查询失败： {}", e)
+        return 1
     fields = ["year", "location", "type", "size", "name", "url"]
     fields.extend(["score_imdb", "score_douban"] if score else [])
     dt = table.DataTable(fields, title={"score_imdb": "IMDB", "score_douban": "豆瓣"}, index=True)

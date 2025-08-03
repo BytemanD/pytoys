@@ -15,7 +15,7 @@ from loguru import logger
 from termcolor import colored, cprint
 
 from pytoys.common import command, httpclient, table
-from pytoys.crawler.oneloume import Web1louMe
+from pytoys.crawler.oneloume.parser import Web1louMe
 from pytoys.github import proxy
 from pytoys.net import ipinfo, location, utils
 from pytoys.net import weather as weather_server
@@ -258,28 +258,32 @@ def bing_image(date: Optional[str] = None, timeout: Optional[int] = None,
 
 
 @crawler.command()
-@click.option("-e", "--exclude", multiple=True, help="按关键字排除")
+# @click.option("-e", "--exclude", multiple=True, help="按关键字排除")
 @click.option("--max-page", type=int, default=1, help="指定最多查询页数")
 @click.option("--min-items", type=int, help="最少匹配条数")
 @click.option("-t", "--type", multiple=True, help="指定类型")
 @click.option("-y", "--year", help="指定年份,格式: 'YYYY' 或 '更早'")
 @click.option("-s", "--score", is_flag=True, help="查询评分")
+@click.option("--model", default='首页', help="抓取模块")
 @click.argument("name", required=False)
 def oneloume(year: Optional[str] = None, max_page: Optional[int] = None, name: Optional[str] = None,
              min_items: Optional[int] = None, type: Optional[str]=None,
-             score=False, exclude = None):   # fmt: skip
+             score=False, model = None):   # fmt: skip
     """爬取 https://www.1lou.me 视频信息
 
     NAME: 指定名称
     """
 
     web = Web1louMe()
+    # url = '/'
+    models = {
+        '首页': '/',
+        '电影': 'forum-1.htm',
+        '剧集': 'forum-2.htm',
+    }
     try:
         videos = web.walk(max_page=max_page, year=year, name=name, min_items=min_items, score=score,
-                         type=type,
-                         exclude_keywords=["夸克", "图书", "学习", '无字片源', "音乐"] + \
-                             list(exclude or []),
-                        progress=True)    # fmt: skip
+                         media_type=type, progress=True, url=models.get(model))    # fmt: skip
     except httpclient.RequestError as e:
         logger.error("查询失败： {}", e)
         return 1
